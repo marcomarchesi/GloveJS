@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <title>GloveJS</title>
+    <style>
+        body {
+          /* set margin to 0 and overflow to hidden, to go fullscreen */
+          margin: 0;
+          overflow: hidden;
+        }
+        #start_button {
+          font-size: 6em;
+          margin: 1em 1em;
+          width:300px;
+          color:white;
+          background-color:#41D6C3;
+          border: 0px;
+        }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script type="text/javascript">
+
+    var isTracking = false;
+    var socket = io.connect('http://localhost:8000');
+
+    // Instance a start/stop button
+    var btn = document.createElement("BUTTON");
+    btn.setAttribute("id", "start_button"); 
+    btn.innerHTML = "Start";       // Create a <button> element
+    document.body.appendChild(btn);  // Append <button> to <body>
+
+    document.getElementById("start_button").addEventListener("click", function(){
+      if(!isTracking){
+        document.getElementById("start_button").innerHTML = "Stop";
+        socket.emit('start');
+        isTracking = true;
+      }else{
+        document.getElementById("start_button").innerHTML = "Start";
+        socket.emit('stop');
+        isTracking = false;
+      } 
+    });
+    // receiving data from LeapMotion
+     socket.on('data', function (data) {
+      console.log(data.roll);
+     });
+
+    </script>
+  </body>
+</html>
+
+
