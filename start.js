@@ -13,19 +13,22 @@ var GYRO_FACTOR = 14.375;
 var ACC_X_OFFSET = 0;
 var ACC_Y_OFFSET = 0;
 var ACC_Z_OFFSET = 38.46;
-var ALPHA = 0.99;
-var BETA = 0.01;
+var ALPHA = 0.9;
+var BETA = 0.1;
 var buffer = new Buffer(21);
 var byteCounter =0;
 var isTracking = false;
 var hand_data = [];
-var past_buffer = {};
+var imuBuffer = {};
 var data_string = "";
 var sampleCounter = 0;
 var io = require('socket.io').listen(app.listen(port));
 
 var quaternion = require("./lib/Quaternion.js");
+var Recognizer = require("./lib/GestureRecognizer.js");
+
 var q = new quaternion(0.1,10);
+var recognizer = new Recognizer();
 
 console.log("listening port " + port);
 
@@ -74,32 +77,35 @@ function sendData(){
 
       // console.log(chalk.green("acc x is: " + (acc_x+ACC_X_OFFSET)*G_FACTOR));
       // console.log(gyr_x);
-      q.update(acc_x+ACC_X_OFFSET,acc_y+ACC_Y_OFFSET,acc_z+ACC_Z_OFFSET,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
+      console.log(chalk.yellow(com_y));
+
+      q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
       q.computeEuler();
 
       // var roll = q.getRoll();
       // var pitch = q.getPitch();
-      var yaw = q.getYaw();
+      var yaw = ALPHA * gyr_z + BETA * com_z;
+      // var yaw = q.getYaw();
       var roll = Math.atan(acc_y/Math.sqrt(acc_x*acc_x + acc_z*acc_z));
       var pitch = Math.atan(acc_x/Math.sqrt(acc_y*acc_y + acc_z*acc_z));
-      console.log(yaw);
+      // console.log(yaw);
 
       
-      past_buffer = {
-                    acc_x:acc_x,
-                    acc_y:acc_y,
-                    acc_z:acc_z,
-                    gyr_x:gyr_x,
-                    gyr_y:gyr_y,
-                    gyr_z:gyr_z,
-                    com_x:com_x,
-                    com_y:com_y,
-                    com_z:com_z
+      imuBuffer = {
+                    acc_x:acc_x.toFixed(2),
+                    acc_y:acc_y.toFixed(2),
+                    acc_z:acc_z.toFixed(2),
+                    gyr_x:gyr_x.toFixed(2),
+                    gyr_y:gyr_y.toFixed(2),
+                    gyr_z:gyr_z.toFixed(2),
+                    com_x:com_x.toFixed(2),
+                    com_y:com_y.toFixed(2),
+                    com_z:com_z.toFixed(2)
                     };
     // send data to client
         sampleCounter++;
         hand_data.push({roll:roll,pitch:pitch,yaw:yaw});
-        io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter});
+        io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter,raw:imuBuffer});
         if(sampleCounter == 60)
           sampleCounter = 0;
     // }
@@ -141,6 +147,9 @@ io.sockets.on('connection', function (socket) {
   socket.on('stop',onStop);
 });
 
+
+/* onStop()
+*/
 function onStop(){
     isTracking = false;
     hand_data.forEach(function(entry){

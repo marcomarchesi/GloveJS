@@ -8,20 +8,26 @@
           overflow: hidden;
         }
         #start_button {
-          font-size: 6em;
-          margin: 1em 1em;
-          width:300px;
-          color:white;
+          display:inline-block;
+          font-size: 1em;
+          margin: 0.9em 7em;
+          width:150px;
+          color: white;
           background-color:#41D6C3;
           border: 0px;
+        }
+        #header{
+          background:rgba(0,0,0,1);
+        }
+        #data{
+          display:inline-block;
+          color:yellow;
         }
     </style>
   </head>
   <body>
     <script type="text/javascript" src="js/three.min.js"></script>
-    <script type="text/javascript" src="js/CelShader.js"></script>
     <script type="text/javascript" src="js/stats.min.js"></script>
-    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
     <script type="text/javascript" src="js/TrackballControls.js"></script>
     <script type="text/javascript" src="js/JSONLoader.js"></script>
     <script type="text/javascript" src="js/dat.gui.min.js"></script>
@@ -36,13 +42,32 @@
 
       var socket = io.connect('http://localhost:8000');
       var roll,pitch,yaw;
+      var raw = {};
 
       //Global variables
       var scene,sceneBG,camera,cameraBG,renderer,composer,controls;
-      var hand_mesh,terrain_mesh;
+      var hand_mesh;
       var light,loader;
       var clock = new THREE.Clock();
       var gui = new dat.GUI();
+
+      var header = document.createElement("div");
+      header.setAttribute("id","header");
+      document.body.appendChild(header);
+      var container = document.createElement("div");
+      document.body.appendChild(container);
+
+    
+      // Instance a start/stop button
+      var btn = document.createElement("BUTTON");
+      btn.setAttribute("id", "start_button"); 
+      btn.innerHTML = "Start";       // Create a <button> element
+      header.appendChild(btn);  // Append <button> to <body>
+      // Instance data field
+      var dataField = document.createElement("div");
+      dataField.setAttribute("id","data");
+      dataField.innerHTML = "";
+      header.appendChild(dataField);
 
             function init() {
 
@@ -115,7 +140,7 @@
             composer.addPass(effectCopy);
 
             // add the output of the renderer to the html element
-            document.body.appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
 
             // load models
             loader = new THREE.JSONLoader();
@@ -125,10 +150,14 @@
             // by requestAnimationFrame
         }
 
+      // read data from socket
+
       socket.on('data',function(data){
         roll = data.roll;
         pitch = data.pitch;
         yaw = data.yaw;
+        raw = data.raw;
+        dataField.innerHTML = "acc_x:" + raw.acc_x + " acc_y:" + raw.acc_y + " acc_z:" + raw.acc_z + " gyr_x:" + raw.gyr_x + " gyr_y:" + raw.gyr_y + " gyr_z:" + raw.gyr_z;
       });
 
       function degreesToRadians(degree){
@@ -136,9 +165,9 @@
       }
     
       function render() {
-        hand_mesh.rotation.z = -roll;
-        // hand_mesh.rotation.y = yaw;
-        hand_mesh.rotation.x = pitch;
+        hand_mesh.rotation.x = roll;
+        hand_mesh.rotation.y = yaw;
+        hand_mesh.rotation.z = pitch;
         hand_mesh.updateMatrix();
     
         controls.update();
@@ -185,10 +214,22 @@
           camera.updateProjectionMatrix();
           renderer.setSize(window.innerWidth, window.innerHeight);
       }
+      function onClickStartButton(){
+        if(!isTracking){
+          document.getElementById("start_button").innerHTML = "Stop";
+          socket.emit('start');
+          isTracking = true;
+        }else{
+          document.getElementById("start_button").innerHTML = "Start";
+          socket.emit('stop');
+          isTracking = false;
+        } 
+      }
 
       window.onload = init;
       // calls the handleResize function when the window is resized
       window.addEventListener('resize', handleResize, false);
+      document.getElementById("start_button").addEventListener("click",onClickStartButton,false);
 
     </script>
   </body>
