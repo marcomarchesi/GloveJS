@@ -119,16 +119,6 @@ app.get('/', function(req, res) {
 
 
   res.sendfile(__dirname + '/public/index.html');
-
-  wit.captureTextIntent("ONGDMADEHQ5VBMYHHKWWBZQDYWQ3N3UB", "move ahead", function (err, res) {
-    if (err) console.log("Error: ", err);
-      // UNCOMMENT for sending just the intent
-      // get_intent = JSON.stringify(res.outcomes[0].intent, null, " ");
-      get_intent = JSON.stringify(res,null," ");
-      // var string = get_intent.outcomes;
-      io.sockets.emit('hand',{intent:get_intent});
-      // response.send(get_intent + " and Leap is " + hands);
-    });
 });
 
 io.sockets.on('connection', function (socket) {
