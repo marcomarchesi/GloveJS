@@ -30,54 +30,10 @@
     <script type="text/javascript" src="js/ShaderPass.js"></script>
     <script type="text/javascript" src="js/MaskPass.js"></script>
     <script type="text/javascript" src="js/CopyShader.js"></script>
-
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
 
-    var isTracking = false;
-    var timer_counter = 10;
-    var socket = io.connect('http://localhost:8000');
 
-    var roll,pitch;
-
-    // // Instance a start/stop button
-    // var btn = document.createElement("BUTTON");
-    // btn.setAttribute("id", "start_button"); 
-    // btn.innerHTML = "Start";       // Create a <button> element
-    // document.body.appendChild(btn);  // Append <button> to <body>
-
-    window.getElementById("start_button").addEventListener("click", function(){
-      if(!isTracking){
-        window.getElementById("start_button").innerHTML = "Stop";
-        socket.emit('start');
-        // set the 2sec countdown for tracking
-        isTracking = true;
-      }
-    });
-    // receiving data from LeapMotion
-     socket.on('data', function (data) {
-      roll = data.roll;
-      pitch = data.pitch;
-      // console.log("roll:" + data.roll + " pitch:" + data.pitch);
-      // ENABLE for recording data
-      // if(data.counter == 60){
-      //   trackingCountdown();
-      // }
-     });
-
-     function trackingCountdown(){
-      timer_counter--;
-      if(timer_counter>0){
-        window.getElementById("start_button").innerHTML = timer_counter;
-      }else{
-        window.getElementById("start_button").innerHTML = "Start";
-        socket.emit('stop');
-        timer_counter = 10;
-        isTracking = false;
-      }
-     }
-    </script>
-    <script type="text/javascript">
       var socket = io.connect('http://localhost:8000');
       var roll,pitch,yaw;
 
@@ -181,9 +137,9 @@
       }
     
       function render() {
-        hand_mesh.rotation.z = roll;
-        hand_mesh.rotation.x = yaw;
-        hand_mesh.rotation.y = pitch;
+        hand_mesh.rotation.z = -roll;
+        hand_mesh.rotation.y = yaw;
+        hand_mesh.rotation.x = -pitch;
         hand_mesh.updateMatrix();
     
         controls.update();

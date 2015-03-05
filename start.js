@@ -10,7 +10,9 @@ var READ_CMD = [0x01,0x02,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 var BAUD_RATE = 115200;
 var G_FACTOR = 0.00390625;
 var GYRO_FACTOR = 14.375;
-var ACC_X_OFFSET = 23;
+// var ACC_X_OFFSET = 23;
+// var ACC_Y_OFFSET = 0;
+var ACC_X_OFFSET = 0;
 var ACC_Y_OFFSET = 0;
 var ACC_Z_OFFSET = 38.46;
 var ALPHA = 0.99;
@@ -36,7 +38,7 @@ var serialport = require("serialport").SerialPort;
 // var SerialPort = serialport.SerialPort;
 
 var sp = new serialport("/dev/cu.AmpedUp-AMP-SPP", {
-// var sp = new serialport("/dev/cu.usbserial-DA00RAK6", {
+// var sp = new serialport("/dev/tty.usbserial-DA00RAK6", {
   baudrate: BAUD_RATE,
 });
 //open serial port
@@ -62,17 +64,28 @@ sp.on('error',function(error){
 });
 function sendData(){
   var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
-  if(isTracking){
-      // low-pass filter
-      // acc_x = ALPHA * past_buffer.acc_x + BETA * buffer.readInt16LE(2);
-      // acc_y = ALPHA * past_buffer.acc_y + BETA * buffer.readInt16LE(4);
-      // acc_z = ALPHA * past_buffer.acc_z + BETA * buffer.readInt16LE(6);
-      // gyr_x = ALPHA * past_buffer.gyr_x + BETA * buffer.readInt16LE(8)/GYRO_FACTOR;
-      // gyr_y = ALPHA * past_buffer.gyr_y + BETA * buffer.readInt16LE(10)/GYRO_FACTOR;
-      // gyr_z = ALPHA * past_buffer.gyr_z + BETA * buffer.readInt16LE(12)/GYRO_FACTOR;
-      // com_x = ALPHA * past_buffer.com_x + BETA * buffer.readInt16LE(14);
-      // com_y = ALPHA * past_buffer.com_y + BETA * buffer.readInt16LE(16);
-      // com_z = ALPHA * past_buffer.com_z + BETA * buffer.readInt16LE(18);
+  // if(isTracking){
+  //     // low-pass filter
+  //     // acc_x = ALPHA * past_buffer.acc_x + BETA * buffer.readInt16LE(2);
+  //     // acc_y = ALPHA * past_buffer.acc_y + BETA * buffer.readInt16LE(4);
+  //     // acc_z = ALPHA * past_buffer.acc_z + BETA * buffer.readInt16LE(6);
+  //     // gyr_x = ALPHA * past_buffer.gyr_x + BETA * buffer.readInt16LE(8)/GYRO_FACTOR;
+  //     // gyr_y = ALPHA * past_buffer.gyr_y + BETA * buffer.readInt16LE(10)/GYRO_FACTOR;
+  //     // gyr_z = ALPHA * past_buffer.gyr_z + BETA * buffer.readInt16LE(12)/GYRO_FACTOR;
+  //     // com_x = ALPHA * past_buffer.com_x + BETA * buffer.readInt16LE(14);
+  //     // com_y = ALPHA * past_buffer.com_y + BETA * buffer.readInt16LE(16);
+  //     // com_z = ALPHA * past_buffer.com_z + BETA * buffer.readInt16LE(18);
+  //     acc_x = buffer.readInt16LE(2);
+  //     acc_y = buffer.readInt16LE(4);
+  //     acc_z = buffer.readInt16LE(6);
+  //     gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR;
+  //     gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR;
+  //     gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR;
+  //     com_x = buffer.readInt16LE(14);
+  //     com_y = buffer.readInt16LE(16);
+  //     com_z = buffer.readInt16LE(18);
+
+  // }else{
       acc_x = buffer.readInt16LE(2);
       acc_y = buffer.readInt16LE(4);
       acc_z = buffer.readInt16LE(6);
@@ -83,20 +96,9 @@ function sendData(){
       com_y = buffer.readInt16LE(16);
       com_z = buffer.readInt16LE(18);
 
-  }else{
-      acc_x = buffer.readInt16LE(2);
-      acc_y = buffer.readInt16LE(4);
-      acc_z = buffer.readInt16LE(6);
-      gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR;
-      gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR;
-      gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR;
-      com_x = buffer.readInt16LE(14);
-      com_y = buffer.readInt16LE(16);
-      com_z = buffer.readInt16LE(18);
-
-      isTracking = true;
-  }
-      console.log(chalk.green("acc y is: " + (acc_y+ACC_Y_OFFSET)*G_FACTOR));
+  //     isTracking = true;
+  // }
+      // console.log(chalk.green("acc x is: " + (acc_x+ACC_X_OFFSET)*G_FACTOR));
       // console.log(gyr_x);
       q.update(acc_x+ACC_X_OFFSET,acc_y+ACC_Y_OFFSET,acc_z+ACC_Z_OFFSET,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
       q.computeEuler();
@@ -106,13 +108,13 @@ function sendData(){
       // comp_x /= comp_norm;
       // comp_y /= comp_norm;
       // comp_z /= comp_norm;
-      var pitch = (Math.atan2(acc_x,Math.sqrt(acc_y*acc_y+acc_z*acc_z)) * 180.0) / Math.PI;
+      // var pitch = (Math.atan2(acc_x,Math.sqrt(acc_y*acc_y+acc_z*acc_z)) * 180.0) / Math.PI;
 
-      var roll = (Math.atan2(acc_y,(Math.sqrt(acc_x*acc_x+acc_z*acc_z))) * 180.0) / Math.PI;
-      // var roll = q.getRoll();
-      // var pitch = q.getPitch();
-      // var yaw = q.getYaw();
-      var yaw = (Math.atan2( (-com_y*Math.cos(roll) + com_z*Math.sin(roll) ) , (com_x*Math.cos(pitch) + com_y*Math.sin(pitch)*Math.sin(roll)+ com_z*Math.sin(pitch)*Math.cos(roll)))* 180.0) / Math.PI;
+      // var roll = (Math.atan2(acc_y,(Math.sqrt(acc_x*acc_x+acc_z*acc_z))) * 180.0) / Math.PI;
+      var roll = q.getRoll();
+      var pitch = q.getPitch();
+      var yaw = q.getYaw();
+      // var yaw = (Math.atan2( (-com_y*Math.cos(roll) + com_z*Math.sin(roll) ) , (com_x*Math.cos(pitch) + com_y*Math.sin(pitch)*Math.sin(roll)+ com_z*Math.sin(pitch)*Math.cos(roll)))* 180.0) / Math.PI;
       past_buffer = {
                     acc_x:acc_x,
                     acc_y:acc_y,
@@ -130,7 +132,7 @@ function sendData(){
     // send data to client
     // if(isTracking){
         sampleCounter++;
-        hand_data.push({roll:roll,pitch:pitch});
+        hand_data.push({roll:roll,pitch:pitch,yaw:yaw});
         io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter});
         if(sampleCounter == 60)
           sampleCounter = 0;
