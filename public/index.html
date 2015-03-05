@@ -18,33 +18,222 @@
     </style>
   </head>
   <body>
-    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script type="text/javascript" src="js/three.min.js"></script>
+    <script type="text/javascript" src="js/CelShader.js"></script>
+    <script type="text/javascript" src="js/stats.min.js"></script>
+    <script type="text/javascript" src="js/FirstPersonControls.js"></script>
+    <script type="text/javascript" src="js/TrackballControls.js"></script>
+    <script type="text/javascript" src="js/JSONLoader.js"></script>
+    <script type="text/javascript" src="js/dat.gui.min.js"></script>
+    <script type="text/javascript" src="js/EffectComposer.js"></script>
+    <script type="text/javascript" src="js/RenderPass.js"></script>
+    <script type="text/javascript" src="js/ShaderPass.js"></script>
+    <script type="text/javascript" src="js/MaskPass.js"></script>
+    <script type="text/javascript" src="js/CopyShader.js"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
 
     var isTracking = false;
+    var timer_counter = 10;
     var socket = io.connect('http://localhost:8000');
 
-    // Instance a start/stop button
-    var btn = document.createElement("BUTTON");
-    btn.setAttribute("id", "start_button"); 
-    btn.innerHTML = "Start";       // Create a <button> element
-    document.body.appendChild(btn);  // Append <button> to <body>
+    var roll,pitch;
 
-    document.getElementById("start_button").addEventListener("click", function(){
+    // // Instance a start/stop button
+    // var btn = document.createElement("BUTTON");
+    // btn.setAttribute("id", "start_button"); 
+    // btn.innerHTML = "Start";       // Create a <button> element
+    // document.body.appendChild(btn);  // Append <button> to <body>
+
+    window.getElementById("start_button").addEventListener("click", function(){
       if(!isTracking){
-        document.getElementById("start_button").innerHTML = "Stop";
+        window.getElementById("start_button").innerHTML = "Stop";
         socket.emit('start');
+        // set the 2sec countdown for tracking
         isTracking = true;
-      }else{
-        document.getElementById("start_button").innerHTML = "Start";
-        socket.emit('stop');
-        isTracking = false;
-      } 
+      }
     });
     // receiving data from LeapMotion
      socket.on('data', function (data) {
-      console.log(data.roll);
+      roll = data.roll;
+      pitch = data.pitch;
+      // console.log("roll:" + data.roll + " pitch:" + data.pitch);
+      // ENABLE for recording data
+      // if(data.counter == 60){
+      //   trackingCountdown();
+      // }
      });
+
+     function trackingCountdown(){
+      timer_counter--;
+      if(timer_counter>0){
+        window.getElementById("start_button").innerHTML = timer_counter;
+      }else{
+        window.getElementById("start_button").innerHTML = "Start";
+        socket.emit('stop');
+        timer_counter = 10;
+        isTracking = false;
+      }
+     }
+    </script>
+    <script type="text/javascript">
+      var socket = io.connect('http://localhost:8000');
+      var roll,pitch,yaw;
+
+      //Global variables
+      var scene,sceneBG,camera,cameraBG,renderer,composer,controls;
+      var hand_mesh,terrain_mesh;
+      var light,loader;
+      var clock = new THREE.Clock();
+      var gui = new dat.GUI();
+
+            function init() {
+
+            clock = new THREE.Clock();
+
+            // create a scene, that will hold all our elements such as objects, cameras and lights.
+            scene = new THREE.Scene();
+
+            // create a camera, which defines where we're looking at.
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            // create a render, sets the background color and the size
+            renderer = new THREE.WebGLRenderer();
+            renderer.setClearColor(0x000000, 1.0);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMapEnabled = true;
+
+                 //Create a light
+            light = new THREE.SpotLight(0xffffff);
+            light.position.set(10,20,20);
+            light.shadowCameraNear = 20;
+            light.shadowCameraFar = 50;
+            light.castShadow = true;
+            scene.add(light);
+
+            gui.addColor(light,'color');
+
+
+            var ambientLight = new THREE.AmbientLight( 0xffffff ); // soft white light
+            scene.add(ambientLight );
+
+
+            // position and point the camera to the center of the scene
+            camera.position.x = 0;
+            camera.position.y = 5;
+            camera.position.z = 20;
+            camera.lookAt(scene.position);
+
+            controls = new THREE.TrackballControls( camera );
+
+            // add extras
+            
+            addStats();
+
+            // add background using a camera
+            cameraBG = new THREE.OrthographicCamera(-window.innerWidth, window.innerWidth, window.innerHeight, -window.innerHeight, -10000, 10000);
+            cameraBG.position.z = 50;
+            sceneBG = new THREE.Scene();
+
+            var materialColor = new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture("./img/starry_background.jpg"), depthTest: false });
+            var bgPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), materialColor);
+            bgPlane.position.z = -100;
+            bgPlane.scale.set(window.innerWidth * 2, window.innerHeight * 2, 1);
+            sceneBG.add(bgPlane);
+
+            // setup the composer steps
+            // first render the background
+            var bgPass = new THREE.RenderPass(sceneBG, cameraBG);
+            // next render the scene (rotating earth), without clearing the current output
+            var renderPass = new THREE.RenderPass(scene, camera);
+            renderPass.clear = false;
+            // finally copy the result to the screen
+            var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
+            effectCopy.renderToScreen = true;
+
+            // add these passes to the composer
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(bgPass);
+            composer.addPass(renderPass);
+            composer.addPass(effectCopy);
+
+            // add the output of the renderer to the html element
+            document.body.appendChild(renderer.domElement);
+
+            // load models
+            loader = new THREE.JSONLoader();
+            loadHand(); //it calls also the renderer
+
+            // call the render function, after the first render, interval is determined
+            // by requestAnimationFrame
+        }
+
+      socket.on('data',function(data){
+        roll = data.roll;
+        pitch = data.pitch;
+        yaw = data.yaw;
+        // console.log("roll: " + roll + " pitch: " + pitch);
+      });
+
+      function degreesToRadians(degree){
+        return degree*(Math.PI/180);
+      }
+    
+      function render() {
+        hand_mesh.rotation.z = roll;
+        hand_mesh.rotation.x = yaw;
+        hand_mesh.rotation.y = pitch;
+        hand_mesh.updateMatrix();
+    
+        controls.update();
+        // controls.update( clock.getDelta() );
+        renderer.autoClear = false;
+        composer.render(); //instead of renderer.render();
+        requestAnimationFrame( render );
+        stats.update();
+      }
+
+      function addStats(){
+        stats = new Stats();
+        stats.setMode(0);
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.left = '0px';
+        stats.domElement.style.top = '0px';
+        document.body.appendChild(stats.domElement);
+      }
+
+      // load the hand
+      function loadHand(){
+        loader.load("./models/hand.js",
+          function(model,materials){
+            materials[0].shading = THREE.FlatShading;
+            // hand_mesh = new THREE.Mesh(model,new THREE.MeshFaceMaterial( materials ));
+            hand_mesh = new THREE.Mesh(model,new THREE.MeshNormalMaterial());
+            hand_mesh.name = 'hand';
+            hand_mesh.castShadow = true;
+            hand_mesh.matrixAutoUpdate = true;
+            scene.add(hand_mesh);
+
+            //start rendering here
+            render();
+            camera.lookAt(hand_mesh.position); 
+          });
+      }
+
+            /**
+       * Function handles the resize event. This make sure the camera and the renderer
+       * are updated at the correct moment.
+       */
+      function handleResize() {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      window.onload = init;
+      // calls the handleResize function when the window is resized
+      window.addEventListener('resize', handleResize, false);
 
     </script>
   </body>
