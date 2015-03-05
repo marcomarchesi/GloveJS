@@ -55,7 +55,7 @@
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 
             // create a render, sets the background color and the size
-            renderer = new THREE.WebGLRenderer();
+            renderer = new THREE.WebGLRenderer({antialias:true});
             renderer.setClearColor(0x000000, 1.0);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMapEnabled = true;
@@ -129,7 +129,6 @@
         roll = data.roll;
         pitch = data.pitch;
         yaw = data.yaw;
-        // console.log("roll: " + roll + " pitch: " + pitch);
       });
 
       function degreesToRadians(degree){
@@ -138,8 +137,8 @@
     
       function render() {
         hand_mesh.rotation.z = -roll;
-        hand_mesh.rotation.y = yaw;
-        hand_mesh.rotation.x = -pitch;
+        // hand_mesh.rotation.y = yaw;
+        hand_mesh.rotation.x = pitch;
         hand_mesh.updateMatrix();
     
         controls.update();
