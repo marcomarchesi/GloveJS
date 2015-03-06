@@ -25,7 +25,10 @@ var sampleCounter = 0;
 var io = require('socket.io').listen(app.listen(port));
 
 var quaternion = require("./lib/Quaternion.js");
+var Recognizer = require("./lib/GestureRecognizer.js");
+
 var q = new quaternion(0.1,10);
+var recognizer = new Recognizer();
 
 console.log("listening port " + port);
 
@@ -73,8 +76,8 @@ function sendData(){
       com_z = buffer.readInt16LE(18);
 
       // console.log(chalk.green("acc x is: " + (acc_x+ACC_X_OFFSET)*G_FACTOR));
-      // console.log(gyr_x);
-      console.log(chalk.yellow(com_y));
+      console.log(gyr_x);
+      // console.log(chalk.yellow(com_y));
 
       q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
       q.computeEuler();
@@ -88,20 +91,21 @@ function sendData(){
       // console.log(yaw);
 
       
-      imuBuffer = {
-                    acc_x:acc_x.toFixed(2),
-                    acc_y:acc_y.toFixed(2),
-                    acc_z:acc_z.toFixed(2),
-                    gyr_x:gyr_x.toFixed(2),
-                    gyr_y:gyr_y.toFixed(2),
-                    gyr_z:gyr_z.toFixed(2),
-                    com_x:com_x.toFixed(2),
-                    com_y:com_y.toFixed(2),
-                    com_z:com_z.toFixed(2)
-                    };
-    // send data to client
+      imuBuffer = [ acc_x.toFixed(2),
+                    acc_y.toFixed(2),
+                    acc_z.toFixed(2),
+                    gyr_x.toFixed(2),
+                    gyr_y.toFixed(2),
+                    gyr_z.toFixed(2),
+                    com_x.toFixed(2),
+                    com_y.toFixed(2),
+                    com_z.toFixed(2)
+                    ];
+
+
+      // send data to client
         sampleCounter++;
-        hand_data.push({roll:roll,pitch:pitch,yaw:yaw});
+        hand_data.push(imuBuffer);
         io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter,raw:imuBuffer});
         if(sampleCounter == 60)
           sampleCounter = 0;
@@ -123,7 +127,7 @@ app.get('/', function(req, res) {
 
   res.sendfile(__dirname + '/public/index.html');
 
-  wit.captureTextIntent("ONGDMADEHQ5VBMYHHKWWBZQDYWQ3N3UB", "move ahead", function (err, res) {
+   wit.captureTextIntent("ONGDMADEHQ5VBMYHHKWWBZQDYWQ3N3UB", "move ahead", function (err, res) {
     if (err) console.log("Error: ", err);
       // UNCOMMENT for sending just the intent
       // get_intent = JSON.stringify(res.outcomes[0].intent, null, " ");
@@ -132,6 +136,7 @@ app.get('/', function(req, res) {
       io.sockets.emit('hand',{intent:get_intent});
       // response.send(get_intent + " and Leap is " + hands);
     });
+
 });
 
 io.sockets.on('connection', function (socket) {
@@ -149,16 +154,20 @@ io.sockets.on('connection', function (socket) {
 */
 function onStop(){
     isTracking = false;
-    hand_data.forEach(function(entry){
-      data_string += entry.roll+ "," + entry.pitch + "\n";
-    });
+
+    var json = JSON.stringify(hand_data);
+
     // add current date to filename
     var d = new Date();
     var n = d.getTime();
-    fs.writeFile('g' + n + '.csv', data_string, function (err) {
+    fs.writeFile('g' + n + '.data', json, function (err) {
       if (err) throw err;
       console.log('It\'s saved!');
     });
+
+    // send data to the recognizer
+    recognizer.load(json);
+    recognizer.cluster();
 }
 
 
