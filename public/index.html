@@ -89,14 +89,18 @@
             renderer.shadowMapEnabled = true;
 
                  //Create a light
-            light = new THREE.SpotLight(0xffffff);
-            light.position.set(10,20,20);
-            light.shadowCameraNear = 20;
-            light.shadowCameraFar = 50;
-            light.castShadow = true;
-            scene.add(light);
 
-            gui.addColor(light,'color');
+            var sunlight = new THREE.DirectionalLight();
+            sunlight.position.set(250, 250, 250);
+            scene.add(sunlight);
+            // light = new THREE.SpotLight(0xffffff);
+            // light.position.set(10,20,20);
+            // light.shadowCameraNear = 20;
+            // light.shadowCameraFar = 50;
+            // light.castShadow = true;
+            // scene.add(light);
+
+            // gui.addColor(light,'color');
 
 
             var ambientLight = new THREE.AmbientLight( 0xffffff ); // soft white light
@@ -169,7 +173,7 @@
     
       function render() {
         hand_mesh.rotation.x = roll;
-        // hand_mesh.rotation.y = yaw;
+        hand_mesh.rotation.y = yaw;
         hand_mesh.rotation.z = pitch;
         hand_mesh.updateMatrix();
     

@@ -13,8 +13,21 @@ var GYRO_FACTOR = 14.375;
 var ACC_X_OFFSET = 0;
 var ACC_Y_OFFSET = 0;
 var ACC_Z_OFFSET = 38.46;
-var ALPHA = 0.9;
-var BETA = 0.1;
+var GYR_X_OFFSET = 0.626;
+var GYR_Y_OFFSET = -1.895;
+var GYR_Z_OFFSET = 0;
+var COM_X_OFFSET = 38;
+var COM_Y_OFFSET = 27.5;
+var COM_Z_OFFSET = -25;
+var COM_X_SCALE = 0.97;
+var COM_Y_SCALE = 0.97;
+var COM_Z_SCALE = 1.05;
+
+// var com_x_max = com_y_max = com_z_max = 0;
+// var com_x_min = com_y_min = com_z_min = 0;
+
+var ALPHA = 0.1;
+var BETA = 0.9;
 var buffer = new Buffer(21);
 var byteCounter =0;
 var isTracking = false;
@@ -63,20 +76,30 @@ sp.on('error',function(error){
   console.log(chalk.red(error));
 });
 function sendData(){
-  var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
+      var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
+
+      
 
       acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
       acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
       acc_z = (buffer.readInt16LE(6) + ACC_Z_OFFSET)*G_FACTOR;
-      gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR;
-      gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR;
-      gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR;
-      com_x = buffer.readInt16LE(14);
-      com_y = buffer.readInt16LE(16);
-      com_z = buffer.readInt16LE(18);
+      gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR - GYR_X_OFFSET;
+      gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR - GYR_Y_OFFSET;
+      gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR - GYR_Z_OFFSET;
+      com_x = COM_X_SCALE * (buffer.readInt16LE(14) - COM_X_OFFSET);
+      com_y = COM_Y_SCALE * (buffer.readInt16LE(16) - COM_Y_OFFSET);
+      com_z = COM_Z_SCALE * (buffer.readInt16LE(18) - COM_Z_OFFSET);
+
+      // com_x_max = Math.max(com_x_max,com_x);
+      // com_x_min = Math.min(com_x_min,com_x);
+      // com_y_max = Math.max(com_y_max,com_y);
+      // com_y_min = Math.min(com_y_min,com_y);
+      // com_z_max = Math.max(com_z_max,com_z);
+      // com_z_min = Math.min(com_z_min,com_z);
+
 
       // console.log(chalk.green("acc x is: " + (acc_x+ACC_X_OFFSET)*G_FACTOR));
-      console.log(gyr_x);
+      // console.log(com_x_max + "," + com_x_min + "," + com_y_max + "," + com_y_min + "," + com_z_max + "," + com_z_min);
       // console.log(chalk.yellow(com_y));
 
       q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
