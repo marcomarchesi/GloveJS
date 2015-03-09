@@ -1,7 +1,8 @@
 {
   "name": "GloveJS",
+  "repository":"https://github.com/marcomarchesi/GloveJS.git",
   "version": "1.0.0",
-  "description": "Glove Controller with LeapMotion and Wit.ai",
+  "description": "Glove Controller powered by Wit.ai",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,6 +10,7 @@
   "author": "Marco Marchesi",
   "license": "ISC",
   "devDependencies": {
+    "brain": "^0.7.0",
     "chalk": "^0.5.1",
     "clusterfck": "^0.6.0",
     "express": "^4.11.1",

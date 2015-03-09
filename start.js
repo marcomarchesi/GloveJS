@@ -178,18 +178,18 @@ io.sockets.on('connection', function (socket) {
 function onStop(){
     isTracking = false;
 
-    var json = JSON.stringify(hand_data);
+    var export_data = hand_data.toString();
 
     // add current date to filename
     var d = new Date();
     var n = d.getTime();
-    fs.writeFile('g' + n + '.data', json, function (err) {
+    fs.writeFile('g' + n + '.data', export_data, function (err) {
       if (err) throw err;
       console.log('It\'s saved!');
     });
 
     // send data to the recognizer
-    recognizer.load(json);
+    recognizer.load(export_data);
     recognizer.cluster();
 }
 

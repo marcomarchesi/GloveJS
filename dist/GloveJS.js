@@ -26,8 +26,8 @@ var COM_Z_SCALE = 1.05;
 // var com_x_max = com_y_max = com_z_max = 0;
 // var com_x_min = com_y_min = com_z_min = 0;
 
-var ALPHA = 0.1;
-var BETA = 0.9;
+var ALPHA = 0.9;
+var BETA = 0.1;
 var buffer = new Buffer(21);
 var byteCounter =0;
 var isTracking = false;
