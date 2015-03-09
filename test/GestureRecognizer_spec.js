@@ -42,12 +42,27 @@ describe('GestureRecognizer', function(){
       recognizer.set(test_data[2],recognizer.GESTURE_START_MIC);
       recognizer.set(test_data[3],recognizer.GESTURE_CIRCLE);
       recognizer.set(test_data[4],recognizer.GESTURE_WALKING);
-      // net.train(recognizer.trainingSet);
-      // var output = net.run([34,5,6]);
-      // console.log("output is " + output.stop);
-      console.log(recognizer.trainingSet);
+
       recognizer.train(net,recognizer.trainingSet);
+      //TODO assert
     });
+  describe('run',function(){
+    it('should run the trained neural network',function(){
+      var recognizer = new gestureRecognizer();
+      recognizer.set(test_data[0],recognizer.GESTURE_START_MIC);
+      recognizer.set(test_data[1],recognizer.GESTURE_STOP);
+      recognizer.set(test_data[2],recognizer.GESTURE_START_MIC);
+      recognizer.set(test_data[3],recognizer.GESTURE_CIRCLE);
+      recognizer.set(test_data[4],recognizer.GESTURE_WALKING);
+
+      recognizer.train(net,recognizer.trainingSet);
+      var output = recognizer.run(net,[34,5,6]);
+      console.log(output.circle);
+      console.log(output.walking);
+
+    });
+  })
+
   });
 
 });
