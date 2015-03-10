@@ -6,8 +6,11 @@ var fs = require('fs');
 var wit = require('node-wit');
 var app = express();
 var port = 8000;
+
+// serial port parameters
 var READ_CMD = [0x01,0x02,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03];
 var BAUD_RATE = 115200;
+// imu parameters
 var G_FACTOR = 0.00390625;
 var GYRO_FACTOR = 14.375;
 var ACC_X_OFFSET = 0;
@@ -22,16 +25,16 @@ var COM_Z_OFFSET = -25;
 var COM_X_SCALE = 0.97;
 var COM_Y_SCALE = 0.97;
 var COM_Z_SCALE = 1.05;
+var ALPHA = 0.9;
+var BETA = 0.1;
 
 // var com_x_max = com_y_max = com_z_max = 0;
 // var com_x_min = com_y_min = com_z_min = 0;
 
-var ALPHA = 0.9;
-var BETA = 0.1;
 var buffer = new Buffer(21);
 var byteCounter =0;
 var isTracking = false;
-var hand_data = [];
+var hand_data = "";
 var imuBuffer = {};
 var data_string = "";
 var sampleCounter = 0;
@@ -46,6 +49,31 @@ var recognizer = new Recognizer();
 console.log("listening port " + port);
 
 app.use(express.static(__dirname + '/public'));
+
+// get the intent with wit.ai
+var get_intent;
+   var startTime = new Date();
+   wit.captureTextIntent("ONGDMADEHQ5VBMYHHKWWBZQDYWQ3N3UB", "move ahead", function (err, res) {
+    if (err) console.log("Error: ", err);
+      // UNCOMMENT for sending just the intent
+      // get_intent = JSON.stringify(res.outcomes[0].intent, null, " ");
+      var endTime = new Date();
+      console.log(endTime - startTime); //difference in milliseconds
+      get_intent = JSON.stringify(res,null," ");
+      
+
+      // var string = get_intent.outcomes;
+      console.log("the intent is " + get_intent);
+      io.sockets.emit('hand',{intent:get_intent});
+      // response.send(get_intent + " and Leap is " + hands);
+    });
+// array of data
+app.get('/', function(req, res) {
+
+   res.sendfile(__dirname + '/public/index.html');
+
+
+});
 
 // //Serial port
 var serialport = require("serialport").SerialPort;
@@ -75,10 +103,10 @@ sp.on('data',function(data){
 sp.on('error',function(error){
   console.log(chalk.red(error));
 });
+
+
 function sendData(){
       var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
-
-      
 
       acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
       acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
@@ -97,17 +125,14 @@ function sendData(){
       // com_z_max = Math.max(com_z_max,com_z);
       // com_z_min = Math.min(com_z_min,com_z);
 
-
-      // console.log(chalk.green("acc x is: " + (acc_x+ACC_X_OFFSET)*G_FACTOR));
-      // console.log(com_x_max + "," + com_x_min + "," + com_y_max + "," + com_y_min + "," + com_z_max + "," + com_z_min);
-      // console.log(chalk.yellow(com_y));
+      console.log(chalk.yellow(com_y));
 
       q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
       q.computeEuler();
 
       // var roll = q.getRoll();
       // var pitch = q.getPitch();
-      var yaw = ALPHA * gyr_z + BETA * com_z;
+      var yaw = ALPHA * degreesToRadians(gyr_z) + BETA * degreesToRadians(com_z);
       // var yaw = q.getYaw();
       var roll = Math.atan(acc_y/Math.sqrt(acc_x*acc_x + acc_z*acc_z));
       var pitch = Math.atan(acc_x/Math.sqrt(acc_y*acc_y + acc_z*acc_z));
@@ -125,10 +150,13 @@ function sendData(){
                     com_z.toFixed(2)
                     ];
 
-
       // send data to client
         sampleCounter++;
-        hand_data.push(imuBuffer);
+
+        for(var i=0;i<8;++i)
+          hand_data += imuBuffer[i] + ',';
+        hand_data += imuBuffer[8] + '\n';
+
         io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter,raw:imuBuffer});
         if(sampleCounter == 60)
           sampleCounter = 0;
@@ -142,25 +170,6 @@ function degreesToRadians(degree){
   return degree*(Math.PI/180);
 }
 
-// get the intent with wit.ai
-var get_intent;
-// array of data
-app.get('/', function(req, res) {
-
-
-  res.sendfile(__dirname + '/public/index.html');
-
-   wit.captureTextIntent("ONGDMADEHQ5VBMYHHKWWBZQDYWQ3N3UB", "move ahead", function (err, res) {
-    if (err) console.log("Error: ", err);
-      // UNCOMMENT for sending just the intent
-      // get_intent = JSON.stringify(res.outcomes[0].intent, null, " ");
-      get_intent = JSON.stringify(res,null," ");
-      // var string = get_intent.outcomes;
-      io.sockets.emit('hand',{intent:get_intent});
-      // response.send(get_intent + " and Leap is " + hands);
-    });
-
-});
 
 io.sockets.on('connection', function (socket) {
   // start tracking
@@ -178,18 +187,18 @@ io.sockets.on('connection', function (socket) {
 function onStop(){
     isTracking = false;
 
-    var json = JSON.stringify(hand_data);
+    console.log(hand_data);
 
     // add current date to filename
     var d = new Date();
     var n = d.getTime();
-    fs.writeFile('g' + n + '.data', json, function (err) {
-      if (err) throw err;
+    fs.writeFile('g' + n + '.data', hand_data, function (err) {
+       if (err) console.log("Error: ", err);
       console.log('It\'s saved!');
     });
 
     // send data to the recognizer
-    recognizer.load(json);
+    recognizer.load(hand_data);
     recognizer.cluster();
 }
 

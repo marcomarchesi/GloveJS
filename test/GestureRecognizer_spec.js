@@ -1,18 +1,25 @@
+/* unit tests for GestureRecognizer.js
+*/
+
 var assert = require("assert");
 var gestureRecognizer = require("../lib/GestureRecognizer.js");
+var fs = require('fs');
 // var recognizer = new gestureRecognizer();
 var test_data = [[23,45,6],[34,4,6],[4,35,2],[2,5,9],[3,25,89]];
 var brain = require('brain');
 var net = new brain.NeuralNetwork();
 
 describe('GestureRecognizer', function(){
+
   describe('load', function(){
     it('should return the data loaded', function(){
       var recognizer = new gestureRecognizer();
-      assert.equal(5, recognizer.load(test_data).length);
+      var test_data = fs.readFileSync('./g1425979269384.csv','utf-8');
+      assert.equal(10, recognizer.load(test_data).length);
       // assert.equal(-1, [1,2,3].indexOf(0));
     });
   });
+
   describe('cluster',function(){
     it('should return the clusters', function(){
       var recognizer = new gestureRecognizer();
@@ -46,6 +53,7 @@ describe('GestureRecognizer', function(){
       recognizer.train(net,recognizer.trainingSet);
       //TODO assert
     });
+  });
   describe('run',function(){
     it('should run the trained neural network',function(){
       var recognizer = new gestureRecognizer();
@@ -58,11 +66,8 @@ describe('GestureRecognizer', function(){
       recognizer.train(net,recognizer.trainingSet);
       var output = recognizer.run(net,[34,5,6]);
       console.log(output.circle);
-      console.log(output.walking);
+      console.log(output.stop);
 
     });
-  })
-
   });
-
 });
