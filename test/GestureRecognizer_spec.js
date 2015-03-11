@@ -33,7 +33,7 @@ describe('GestureRecognizer', function(){
       var test_data = fs.readFileSync('./g1425979269384.csv','utf-8');
       recognizer.load(test_data);
       recognizer.cluster(2);
-      var newIndex = recognizer.classify([2,30,4,50,6,2,7,4,90]);
+      console.log(recognizer.classify([2,30,4,50,6,2,7,4,90]));
     });
   });
   /* valid gestures:
@@ -55,8 +55,8 @@ describe('GestureRecognizer', function(){
   describe('train',function(){
     it('should train the training set made by pairs (glove_data,gesture)',function(){
       var recognizer = new gestureRecognizer();
-      var test_data = fs.readFileSync('./g1425979269384.csv','utf-8');
-      recognizer.load(test_data);
+      var data = fs.readFileSync('./g1425979269384.csv','utf-8');
+      var test_data = recognizer.load(data);
       recognizer.set(test_data[0],recognizer.GESTURE_START_MIC);
       recognizer.set(test_data[1],recognizer.GESTURE_STOP);
       recognizer.set(test_data[2],recognizer.GESTURE_START_MIC);
@@ -70,19 +70,22 @@ describe('GestureRecognizer', function(){
   describe('run',function(){
     it('should run the trained neural network',function(){
       var recognizer = new gestureRecognizer();
-      var test_data = fs.readFileSync('./g1425979269384.csv','utf-8');
-      recognizer.load(test_data);
+      var data = fs.readFileSync('./g1425979269384.csv','utf-8');
+      var test_data = recognizer.load(data);
       recognizer.set(test_data[0],recognizer.GESTURE_START_MIC);
-      recognizer.set(test_data[1],recognizer.GESTURE_STOP);
+      recognizer.set(test_data[1],recognizer.GESTURE_START_MIC);
       recognizer.set(test_data[2],recognizer.GESTURE_START_MIC);
-      recognizer.set(test_data[3],recognizer.GESTURE_CIRCLE);
-      recognizer.set(test_data[4],recognizer.GESTURE_WALKING);
+      recognizer.set(test_data[3],recognizer.GESTURE_START_MIC);
+      recognizer.set(test_data[4],recognizer.GESTURE_START_MIC);
 
       recognizer.train(net,recognizer.trainingSet);
-      var output = recognizer.run(net,[34,5,6,4,6,2,5,3,7]);
-      console.log(output.circle);
-      console.log(output.stop);
-
+      var output = recognizer.run(net,[-0.44,0.43,0.80,-30.47,-29.83,6.47,23.28,14.06,-289.80]);
+      console.log("circle is " + output.circle);
+      console.log("stop is " + output.stop);
+      console.log("walking is " + output.walking);
+      console.log("start mic is " + output.mic);
     });
   });
+
+  
 });

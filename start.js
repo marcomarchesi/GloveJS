@@ -3,8 +3,11 @@ var express = require('express');
 var socket = require('socket.io');
 var chalk = require('chalk');
 var fs = require('fs');
+var _ = require('underscore');
 var wit = require('node-wit');
 var app = express();
+// Serial port
+var serialport = require("serialport").SerialPort;
 var port = 8000;
 
 // serial port parameters
@@ -33,10 +36,9 @@ var BETA = 0.1;
 
 var buffer = new Buffer(21);
 var byteCounter =0;
-var isTracking = false;
+// var isTracking = false;
 var hand_data = "";
 var imuBuffer = {};
-var data_string = "";
 var sampleCounter = 0;
 var io = require('socket.io').listen(app.listen(port));
 
@@ -48,35 +50,17 @@ var recognizer = new Recognizer();
 
 console.log("listening port " + port);
 
+
+/* render index.html
+*/
 app.use(express.static(__dirname + '/public'));
-
-// get the intent with wit.ai
-var get_intent;
-   var startTime = new Date();
-   wit.captureTextIntent("ONGDMADEHQ5VBMYHHKWWBZQDYWQ3N3UB", "move ahead", function (err, res) {
-    if (err) console.log("Error: ", err);
-      // UNCOMMENT for sending just the intent
-      // get_intent = JSON.stringify(res.outcomes[0].intent, null, " ");
-      var endTime = new Date();
-      console.log(endTime - startTime); //difference in milliseconds
-      get_intent = JSON.stringify(res,null," ");
-      
-
-      // var string = get_intent.outcomes;
-      console.log("the intent is " + get_intent);
-      io.sockets.emit('hand',{intent:get_intent});
-      // response.send(get_intent + " and Leap is " + hands);
-    });
-// array of data
 app.get('/', function(req, res) {
 
    res.sendfile(__dirname + '/public/index.html');
 
-
 });
 
-// //Serial port
-var serialport = require("serialport").SerialPort;
+
 
 var sp = new serialport("/dev/cu.AmpedUp-AMP-SPP", {
 // var sp = new serialport("/dev/tty.usbserial-DA00RAK6", {
@@ -153,6 +137,13 @@ function sendData(){
       // send data to client
         sampleCounter++;
 
+
+        //update queue with a new value
+        recognizer.queue.push(_.first(imuBuffer, 6));
+        if(recognizer.queue.length == 6)
+          recognizer.queue.shift();
+
+
         for(var i=0;i<8;++i)
           hand_data += imuBuffer[i] + ',';
         hand_data += imuBuffer[8] + '\n';
@@ -173,21 +164,47 @@ function degreesToRadians(degree){
 
 io.sockets.on('connection', function (socket) {
   // start tracking
- socket.on('start',function (data) {
-  hand_data = [];
-  data_string = "";
-  isTracking = true;
+  socket.on('start',function (data) {
+  hand_data = "";
+  // isTracking = true;
   });
-  socket.on('stop',onStop);
+  socket.on('stop',function(data) {
+    onStop(data.gesture);
+  });
 });
 
 
 /* onStop()
 */
-function onStop(){
-    isTracking = false;
+function onStop(gesture){
+    // isTracking = false;
 
-    console.log(hand_data);
+    var gestureString = "";
+    /* valid gestures:
+    * 1. start mic
+    * 2. stop
+    * 3. walking 
+    * 4. circle 
+    */
+    switch(gesture){
+      case 0:
+        gestureString = "NO_GESTURE\n";
+      break;
+      case 1:
+        gestureString = "GESTURE_START_MIC\n";
+      break;
+      case 2:
+        gestureString = "GESTURE_STOP\n";
+      break;
+      case 3:
+        gestureString = "GESTURE_WALKING\n";
+      break;
+      case 4:
+        gestureString = "GESTURE_CIRCLE\n";
+      break;
+    }
+
+    hand_data = gestureString + hand_data;
 
     // add current date to filename
     var d = new Date();
