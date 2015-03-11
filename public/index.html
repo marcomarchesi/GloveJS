@@ -7,10 +7,10 @@
           margin: 0;
           overflow: hidden;
         }
-        button {
+        #startButton {
           display:inline-block;
           font-size: 1em;
-          margin: 0.9em 7em;
+          margin: 0.9em 3em;
           width:150px;
           color: white;
           background-color:#41D6C3;
@@ -19,8 +19,8 @@
         #trainField {
           display:inline-block;
           font-size: 1em;
-          margin: 0.9em 7em;
-          width:150px;
+          margin: 0.9em 1em;
+          width:200px;
           color: white;
           background-color:#41D6C3;
           border: 0px;
@@ -58,7 +58,7 @@
       var light,loader;
       var clock = new THREE.Clock();
 
-      var isTracking = false;
+      var isTraining = false;
 
       var header = document.createElement("div");
       header.setAttribute("id","header");
@@ -75,9 +75,9 @@
       document.getElementById("startButton").addEventListener("click",onClickStartButton,false);
 
 
-      var trainField = document.createElement("div");
+      var trainField = document.createElement("BUTTON");
       trainField.setAttribute("id","trainField");
-      trainField.innerHTML = "No Train";
+      trainField.innerHTML = "NO_GESTURE";
       header.appendChild(trainField);
       
       // document.getElementById("trainField").addEventListener("click",onKeyPressForGesture,false);
@@ -244,32 +244,37 @@
       function onKeyPressForGesture(event){
         var key = event.keyCode;
         var gesture = key % 48;
-        
-        switch(gesture){
-          case 0:
-            trainField.innerHTML = "NO_GESTURE";
-          break;
-          case 1:
-            trainField.innerHTML = "GESTURE_START_MIC";
-          break;
-          case 2:
-            trainField.innerHTML = "GESTURE_STOP";
-          break;
-          case 3:
-            trainField.innerHTML = "GESTURE_WALKING";
-          break;
-          case 4:
-            trainField.innerHTML = "GESTURE_CIRCLE";
-          break;
-          default:
-            trainField.innerHTML = "NO_GESTURE";
 
+        if(!isTraining){
+
+          isTraining = true;
+          switch(gesture){
+            case 0:
+              trainField.innerHTML = "NO_GESTURE";
+            break;
+            case 1:
+              trainField.innerHTML = "GESTURE_START_MIC";
+            break;
+            case 2:
+              trainField.innerHTML = "GESTURE_STOP";
+            break;
+            case 3:
+              trainField.innerHTML = "GESTURE_WALKING";
+            break;
+            case 4:
+              trainField.innerHTML = "GESTURE_CIRCLE";
+            break;
+            default:
+              trainField.innerHTML = "NO_GESTURE";
+          }
+          socket.emit('start');
+          setTimeout(function(){
+            trainField.innerHTML = "NO_GESTURE";
+            socket.emit('stop',{gesture:gesture});
+            isTraining = false;
+          },1500);
         }
 
-        socket.emit('start');
-        setTimeout(function(){
-          socket.emit('stop',{gesture:gesture});
-        },1500);
       }
 
       window.onload = init;

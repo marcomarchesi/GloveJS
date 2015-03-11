@@ -165,19 +165,46 @@ function degreesToRadians(degree){
 io.sockets.on('connection', function (socket) {
   // start tracking
   socket.on('start',function (data) {
-  hand_data = [];
+  hand_data = "";
   // isTracking = true;
   });
-  socket.on('stop',onStop);
+  socket.on('stop',function(data) {
+    onStop(data.gesture);
+  });
 });
 
 
 /* onStop()
 */
-function onStop(){
+function onStop(gesture){
     // isTracking = false;
 
-    console.log(hand_data);
+    var gestureString = "";
+    /* valid gestures:
+    * 1. start mic
+    * 2. stop
+    * 3. walking 
+    * 4. circle 
+    */
+    switch(gesture){
+      case 0:
+        gestureString = "NO_GESTURE\n";
+      break;
+      case 1:
+        gestureString = "GESTURE_START_MIC\n";
+      break;
+      case 2:
+        gestureString = "GESTURE_STOP\n";
+      break;
+      case 3:
+        gestureString = "GESTURE_WALKING\n";
+      break;
+      case 4:
+        gestureString = "GESTURE_CIRCLE\n";
+      break;
+    }
+
+    hand_data = gestureString + hand_data;
 
     // add current date to filename
     var d = new Date();
