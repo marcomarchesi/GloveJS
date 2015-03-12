@@ -8,6 +8,11 @@ var wit = require('node-wit');
 var app = express();
 // Serial port
 var serialport = require("serialport").SerialPort;
+// Neural Network
+var brain = require('brain');
+var net = new brain.NeuralNetwork();
+
+
 var port = 8000;
 
 // serial port parameters
@@ -49,6 +54,10 @@ var q = new quaternion(0.1,10);
 var recognizer = new Recognizer();
 
 console.log("listening port " + port);
+
+/* init trained neural network */
+var network = JSON.parse(fs.readFileSync('./trained_net.json','utf-8'));
+net.fromJSON(network);
 
 
 /* render index.html
@@ -139,9 +148,34 @@ function sendData(){
 
 
         //update queue with a new value
-        recognizer.queue.push(_.first(imuBuffer, 6));
-        if(recognizer.queue.length == 6)
+        var queueElement = [];
+        for(var i = 0;i<recognizer.GESTURE_SAMPLES;++i){
+          queueElement.push(Number(imuBuffer[i]));
+        }
+        // console.log(queueElement);
+        recognizer.queue.push(queueElement);
+
+        if(recognizer.queue.length == recognizer.GESTURE_SAMPLES+1)
           recognizer.queue.shift();
+
+        // console.log(recognizer.queue);
+
+        var flattenQueue = _.flatten(recognizer.queue,true);
+        console.log(flattenQueue);
+
+              var sample = [0.14,-1.36,0.15,61.57,-12.78,219.27,-8.73,442.81,-117.60,
+                    0.08,-0.86,0.10,-30.40,-2.90,-150.61,60.14,417.58,-140.70,
+                    -0.22,-1.48,0.23,-53.50,-10.56,-190.68,-350.17,358.41,-58.80,
+                    -0.27,-1.00,0.18,20.66,-8.12,84.80,-415.16,284.69,-48.30,
+                    0.06,-1.42,0.15,51.41,-10.07,242.37,-94.09,453.47,-96.60,
+                    0.10,-0.78,0.10,-23.03,-20.99,-102.54,68.87,419.52,-131.25];
+
+        // detect new gesture from updated data
+        var output = recognizer.run(net,flattenQueue);
+          console.log("circle is " + output.circle);
+          console.log("stop is " + output.stop);
+          console.log("walking is " + output.walking);
+          console.log("start mic is " + output.mic);
 
 
         for(var i=0;i<8;++i)
