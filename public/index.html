@@ -25,6 +25,15 @@
           background-color:#41D6C3;
           border: 0px;
         }
+        #recognizerField {
+          display:inline-block;
+          font-size: 1em;
+          margin: 0.9em 1em;
+          width:200px;
+          color: white;
+          background-color:#41D6C3;
+          border: 0px;
+        }
         #header{
           background:rgba(0,0,0,1);
         }
@@ -77,7 +86,7 @@
 
       var trainField = document.createElement("BUTTON");
       trainField.setAttribute("id","trainField");
-      trainField.innerHTML = "NO_GESTURE";
+      trainField.innerHTML = "-------";
       header.appendChild(trainField);
       
       // document.getElementById("trainField").addEventListener("click",onKeyPressForGesture,false);
@@ -90,7 +99,7 @@
       header.appendChild(dataField);
 
       var recognizerField = document.createElement("div");
-      recognizerField.setAttribute("id","recognizer");
+      recognizerField.setAttribute("id","recognizerField");
       recognizerField.innerHTML = "MIC: 0.00 WALK: 0.00 STOP: 0.00 CIRCLE: 0.00";
       header.appendChild(recognizerField);
 
@@ -179,7 +188,16 @@
         raw = data.raw;
         var output = data.recognizer;
         dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5];
-        recognizerField.innerHTML = "MIC: " + output.mic + " WALK: " + output.walking + " STOP: " + output.stop + " CIRCLE: " + output.circle;
+        recognizerField.innerHTML = "MIC: " + output.mic.toFixed(2) + " WALK: " + output.walking.toFixed(2) + " STOP: " + output.stop.toFixed(2) + " CIRCLE: " + output.circle.toFixed(2);
+
+        if(output.mic > 0.9)
+          alert("mic");
+        if(output.walking > 0.9)
+          alert("walking");
+        if(output.circle > 0.9)
+          alert("circle");
+        if(output.stop > 0.9)
+          alert("stop");
       });
 
       function degreesToRadians(degree){
@@ -276,7 +294,7 @@
           }
           socket.emit('start');
           setTimeout(function(){
-            trainField.innerHTML = "NO_GESTURE";
+            trainField.innerHTML = "-------";
             socket.emit('stop',{gesture:gesture});
             isTraining = false;
           },1500);

@@ -152,16 +152,12 @@ function sendData(){
         for(var i = 0;i<recognizer.GESTURE_SAMPLES;++i){
           queueElement.push(Number(imuBuffer[i]));
         }
-        // console.log(queueElement);
         recognizer.queue.push(queueElement);
 
         if(recognizer.queue.length == recognizer.GESTURE_SAMPLES+1)
           recognizer.queue.shift();
 
-        // console.log(recognizer.queue);
-
         var flattenQueue = _.flatten(recognizer.queue,true);
-        // console.log(flattenQueue);
 
         var sample = [0.14,-1.36,0.15,61.57,-12.78,219.27,-8.73,442.81,-117.60,
               0.08,-0.86,0.10,-30.40,-2.90,-150.61,60.14,417.58,-140.70,
@@ -169,6 +165,13 @@ function sendData(){
               -0.27,-1.00,0.18,20.66,-8.12,84.80,-415.16,284.69,-48.30,
               0.06,-1.42,0.15,51.41,-10.07,242.37,-94.09,453.47,-96.60,
               0.10,-0.78,0.10,-23.03,-20.99,-102.54,68.87,419.52,-131.25];
+
+        // console.log(sample.length);
+
+        var sample2 = [-0.3,0.39,0.87,0.77,1.41,0.83,-0.33,0.37,0.86,0.7,
+                        -0.61,-0.28,-0.34,0.39,0.86,-0.35,1.06,-2.78,-0.34,
+                        0.38,0.87,-1.67,0.92,-0.42,-0.3,0.36,0.88,-0.97,0.36,
+                        -1.74,-0.33,0.38,0.86,-0.97,2.8,-0.21];
 
         // detect new gesture from updated data
         var output = recognizer.run(net,flattenQueue);
@@ -221,7 +224,7 @@ function onStop(gesture){
     */
     switch(gesture){
       case 0:
-        gestureString = "NO_GESTURE\n";
+        gestureString = "GESTURE_NONE\n";
       break;
       case 1:
         gestureString = "GESTURE_START_MIC\n";
