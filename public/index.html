@@ -57,7 +57,7 @@
     <script type="text/javascript">
 
 
-      var socket = io.connect('http://localhost:8000');
+      var socket = io.connect('http://localhost:8001'); //receive data from glove.js
       var roll,pitch,yaw;
       var raw = {};
 
@@ -269,6 +269,7 @@
       function onKeyPressForGesture(event){
         var key = event.keyCode;
         var gesture = key % 48;
+        var delay = 1500;
 
         if(!isTraining){
 
@@ -289,15 +290,21 @@
             case 4:
               trainField.innerHTML = "GESTURE_CIRCLE";
             break;
+            case 5:
+              trainField.innerHTML = "GESTURE_STANDING";
+            break;
             default:
               trainField.innerHTML = "NO_GESTURE";
           }
+          if(gesture == 0)
+            delay = 150000;
+
           socket.emit('start');
           setTimeout(function(){
             trainField.innerHTML = "-------";
             socket.emit('stop',{gesture:gesture});
             isTraining = false;
-          },1500);
+          },delay);
         }
 
       }

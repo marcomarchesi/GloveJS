@@ -40,22 +40,36 @@ GestureRecognizer.prototype.load = function(data){
   var regex = /GESTURE\_(\w*\_*\w)\n/g;
   var gesture_id = regex.exec(data)[0]; //check the gesture trained
   data = data.replace(regex,"");
+  var lines = _.initial(data.split('\n'));  //remove the last entry of the array == ''
 
-  var lines = data.split('\n');
+  var trainingSetLength = lines.length / 6;
 
-  for(var i=0;i<this.TRAINING_SETS;++i){
-    var set = [];
-    for(var j=0;j<this.GESTURE_SAMPLES;++j){
-      var line = lines[(i*6)+j].split(',');
-      for(var k=0;k<this.SAMPLE_DIM;++k){
-        set.push(Number(line[k]));
+  if(gesture_id == "GESTURE_NONE\n"){
+    for(var i=0;i<lines.length-6;++i){
+      var set = [];
+      for(var j=i;j<i+6;++j){
+        var line = lines[j].split(',');
+        for(var k=0;k<this.SAMPLE_DIM;++k){
+          set.push(Number(line[k]));
+        }
       }
+      this.data.push(set);
     }
-    this.data.push(set);
+  }else{
+    for(var i=0;i<trainingSetLength;++i){
+      var set = [];
+      for(var j=0;j<this.GESTURE_SAMPLES;++j){
+        var line = lines[(i*6)+j].split(',');
+        for(var k=0;k<this.SAMPLE_DIM;++k){
+          set.push(Number(line[k]));
+        }
+      }
+      this.data.push(set);
+    }
   }
-
   return this.data;
 };
+
 
 /* clustering data and return centroids*/
 GestureRecognizer.prototype.cluster = function(K){
