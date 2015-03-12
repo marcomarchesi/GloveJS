@@ -74,7 +74,7 @@ describe('GestureRecognizer', function(){
 
       recognizer.train(net,recognizer.trainingSet);
 
-      assert.equal(636,recognizer.trainingSet.length); //10 samples for each gesture
+      assert.equal(63,recognizer.trainingSet.length); //10 samples for each gesture
     });
   });
   // describe('run',function(){

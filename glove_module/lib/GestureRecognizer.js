@@ -37,6 +37,8 @@ GestureRecognizer.prototype.load = function(data){
 
   this.data = [];
 
+  console.log(data);
+
   var regex = /GESTURE\_(\w*\_*\w)\n/g;
   var gesture_id = regex.exec(data)[0]; //check the gesture trained
   data = data.replace(regex,"");
