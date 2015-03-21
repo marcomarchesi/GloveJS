@@ -120,11 +120,10 @@ GestureRecognizer.prototype.train = function(network,training_set){
   console.log("hello train!");
   network.train(training_set,{
   errorThresh: 0.005,  // error threshold to reach
-  iterations: 40000,   // maximum training iterations
+  iterations: 20000,   // maximum training iterations
   log: true,           // console.log() progress periodically
   logPeriod: 10,       // number of iterations between logging
-  learningRate: 0.3,    // learning rate
-  hiddenLayers: [2]
+  learningRate: 0.3    // learning rate
 });
   var net = JSON.stringify(network.toJSON());
   fs.writeFile('trained_net.json', net, function (err) {

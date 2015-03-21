@@ -33,6 +33,8 @@ var COM_Z_SCALE = 1.05;
 var ALPHA = 0.9;
 var BETA = 0.1;
 
+var SAMPLE_DIM = 6;
+
 // var com_x_max = com_y_max = com_z_max = 0;
 // var com_x_min = com_y_min = com_z_min = 0;
 
@@ -50,8 +52,8 @@ console.log("hello glove");
 
 
 
-// var quaternion = require("./lib/Quaternion.js");
-// var q = new quaternion(0.1,10);
+var quaternion = require("./Quaternion.js");
+var q = new quaternion(0.1,10);
 
 var Recognizer = require("./GestureRecognizer.js");
 var recognizer = new Recognizer();
@@ -89,6 +91,8 @@ sp.on('error',function(error){
 function sendData(){
       var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
 
+      // console.log(chalk.yellow(buffer.readInt16LE(2)));
+
       acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
       acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
       acc_z = (buffer.readInt16LE(6) + ACC_Z_OFFSET)*G_FACTOR;
@@ -106,17 +110,18 @@ function sendData(){
       // com_z_max = Math.max(com_z_max,com_z);
       // com_z_min = Math.min(com_z_min,com_z);
 
-      console.log(chalk.yellow(acc_x));
+      console.log(chalk.yellow(acc_z));
 
-      // q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
-      // q.computeEuler();
+      q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
+      q.computeEuler();
 
-      // var roll = q.getRoll();
-      // var pitch = q.getPitch();
-      var yaw = ALPHA * degreesToRadians(gyr_z) + BETA * degreesToRadians(com_z);
-      // var yaw = q.getYaw();
-      var roll = Math.atan(acc_y/Math.sqrt(acc_x*acc_x + acc_z*acc_z));
-      var pitch = Math.atan(acc_x/Math.sqrt(acc_y*acc_y + acc_z*acc_z));
+      var roll = q.getRoll();
+      var pitch = q.getPitch();
+      // var yaw = ALPHA * degreesToRadians(gyr_z) + BETA * degreesToRadians(com_z);
+      var yaw = q.getYaw();
+      // var pitch = Math.asin(-acc_x/Math.sqrt(acc_x*acc_x + acc_y*acc_y + acc_z*acc_z));
+      // var roll = Math.asin(acc_y/Math.cos(pitch)*Math.sqrt(acc_x*acc_x + acc_z*acc_z));
+      
       // console.log(yaw);
 
       
@@ -147,20 +152,6 @@ function sendData(){
 
         var flattenQueue = _.flatten(recognizer.queue,true);
 
-        var sample = [0.14,-1.36,0.15,61.57,-12.78,219.27,-8.73,442.81,-117.60,
-              0.08,-0.86,0.10,-30.40,-2.90,-150.61,60.14,417.58,-140.70,
-              -0.22,-1.48,0.23,-53.50,-10.56,-190.68,-350.17,358.41,-58.80,
-              -0.27,-1.00,0.18,20.66,-8.12,84.80,-415.16,284.69,-48.30,
-              0.06,-1.42,0.15,51.41,-10.07,242.37,-94.09,453.47,-96.60,
-              0.10,-0.78,0.10,-23.03,-20.99,-102.54,68.87,419.52,-131.25];
-
-        // console.log(sample.length);
-
-        var sample2 = [-0.3,0.39,0.87,0.77,1.41,0.83,-0.33,0.37,0.86,0.7,
-                        -0.61,-0.28,-0.34,0.39,0.86,-0.35,1.06,-2.78,-0.34,
-                        0.38,0.87,-1.67,0.92,-0.42,-0.3,0.36,0.88,-0.97,0.36,
-                        -1.74,-0.33,0.38,0.86,-0.97,2.8,-0.21];
-
         // detect new gesture from updated data
         var output = recognizer.run(net,flattenQueue);
           // console.log("circle is " + output.circle);
@@ -168,13 +159,14 @@ function sendData(){
           // console.log("walking is " + output.walking);
           // console.log("start mic is " + output.mic);
 
-        for(var i=0;i<8;++i)
-          hand_data += imuBuffer[i] + ',';
-        hand_data += imuBuffer[8] + '\n';
+        for(var i=0;i<SAMPLE_DIM;++i)
+          hand_data += imuBuffer[i] + '\t';
+
+        hand_data += imuBuffer[SAMPLE_DIM] + '\n';
 
         io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter,raw:imuBuffer,recognizer:output});
-        if(sampleCounter == 60)
-          sampleCounter = 0;
+        // if(sampleCounter == 60)
+        //   sampleCounter = 0;
     // }
     buffer = new Buffer(21);
     byteCounter = 0;
@@ -189,8 +181,8 @@ function degreesToRadians(degree){
 io.sockets.on('connection', function (socket) {
   // start tracking
   socket.on('start',function (data) {
-  hand_data = "";
-  // isTracking = true;
+    hand_data = "";
+    sampleCounter = 0;
   });
   socket.on('stop',function(data) {
     onStop(data.gesture);
@@ -204,40 +196,43 @@ function onStop(gesture){
     // isTracking = false;
 
 
-    var gestureString = "";
+    var gestureString = "************TIME_SERIES************\n";
+
     /* valid gestures:
     * 1. start mic
     * 2. stop
     * 3. walking 
     * 4. circle 
     */
-    switch(gesture){
-      case 0:
-        gestureString = "GESTURE_NONE\n";
-      break;
-      case 1:
-        gestureString = "GESTURE_START_MIC\n";
-      break;
-      case 2:
-        gestureString = "GESTURE_STOP\n";
-      break;
-      case 3:
-        gestureString = "GESTURE_WALKING\n";
-      break;
-      case 4:
-        gestureString = "GESTURE_CIRCLE\n";
-      break;
-      case 5:
-        gestureString = "GESTURE_STANDING\n";
-      break;
-    }
 
-    var filepath = './training_set/' + gestureString.replace("\n","") + '.csv';
+    gestureString += "ClassID: " + gesture + "\n";
+    gestureString += "TimeSeriesLength: " + sampleCounter + "\n";
+    gestureString += "TimeSeriesData: \n";
+    // switch(gesture){
+    //   case 0:
+    //     gestureString += "GESTURE_NONE\n";
+    //   break;
+    //   case 1:
+    //     gestureString += "GESTURE_START_MIC\n";
+    //   break;
+    //   case 2:
+    //     gestureString = "GESTURE_STOP\n";
+    //   break;
+    //   case 3:
+    //     gestureString = "GESTURE_WALKING\n";
+    //   break;
+    //   case 4:
+    //     gestureString = "GESTURE_CIRCLE\n";
+    //   break;
+    //   case 5:
+    //     gestureString = "GESTURE_STANDING\n";
+    //   break;
+    // }
+
+    var filepath = './training_set/gesture_data.txt';
     var data = fs.readFileSync(filepath,'utf-8');
 
-
     data += gestureString + hand_data;
-    
 
     // add current date to filename
     // var d = new Date();
@@ -246,5 +241,7 @@ function onStop(gesture){
        if (err) console.log("Error: ", err);
       console.log('It\'s saved!');
     });
+
+    sampleCounter = 0;
 
 }

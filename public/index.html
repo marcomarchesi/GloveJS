@@ -190,14 +190,14 @@
         dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5];
         recognizerField.innerHTML = "MIC: " + output.mic.toFixed(2) + " WALK: " + output.walking.toFixed(2) + " STOP: " + output.stop.toFixed(2) + " CIRCLE: " + output.circle.toFixed(2);
 
-        if(output.mic > 0.9)
-          alert("mic");
-        if(output.walking > 0.9)
-          alert("walking");
-        if(output.circle > 0.9)
-          alert("circle");
-        if(output.stop > 0.9)
-          alert("stop");
+        // if(output.mic > 0.9)
+        //   alert("mic");
+        // if(output.walking > 0.9)
+        //   alert("walking");
+        // if(output.circle > 0.9)
+        //   alert("circle");
+        // if(output.stop > 0.9)
+        //   alert("stop");
       });
 
       function degreesToRadians(degree){
@@ -269,7 +269,7 @@
       function onKeyPressForGesture(event){
         var key = event.keyCode;
         var gesture = key % 48;
-        var delay = 1500;
+        var delay = 3000;
 
         if(!isTraining){
 

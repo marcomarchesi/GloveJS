@@ -51,67 +51,67 @@ describe('GestureRecognizer', function(){
   //   });
   // });
 
-  describe('train',function(){
-    it('should train the training set made by pairs (glove_data,gesture)',function(){
-      var recognizer = new gestureRecognizer();
-      var unlabeled_set = [];
-
-      var data = fs.readFileSync('./training_set/GESTURE_CIRCLE.csv','utf-8');
-      unlabeled_set = recognizer.load(data);
-      recognizer.set(unlabeled_set,recognizer.GESTURE_CIRCLE);
-      
-      data = fs.readFileSync('./training_set/GESTURE_START_MIC.csv','utf-8');
-      unlabeled_set = recognizer.load(data);
-      recognizer.set(unlabeled_set,recognizer.GESTURE_START_MIC);
-      
-      data = fs.readFileSync('./training_set/GESTURE_STOP.csv','utf-8');
-      unlabeled_set = recognizer.load(data);
-      recognizer.set(unlabeled_set,recognizer.GESTURE_STOP);
-      
-      data = fs.readFileSync('./training_set/GESTURE_WALKING.csv','utf-8');
-      unlabeled_set = recognizer.load(data);
-      recognizer.set(unlabeled_set,recognizer.GESTURE_WALKING);
-
-      recognizer.train(net,recognizer.trainingSet);
-
-      assert.equal(63,recognizer.trainingSet.length); //10 samples for each gesture
-    });
-  });
-  // describe('run',function(){
-  //   it('should run the trained neural network',function(){
+  // describe('train',function(){
+  //   it('should train the training set made by pairs (glove_data,gesture)',function(){
   //     var recognizer = new gestureRecognizer();
-  //     var sample = [-0.11,-2.77,0.22,74.71,-2.00,429.70,-208.55,439.89,-82.95,
-  //                   0.27,-0.46,0.04,16.14,-23.01,25.11,269.66,240.07,-179.55,
-  //                   -0.09,-2.43,0.28,-71.72,11.56,-396.38,-171.69,444.75,-106.05,
-  //                   -0.41,-0.86,0.10,5.91,58.94,-41.95,-457.84,194.48,-97.65,
-  //                   -0.25,-1.86,0.21,30.19,-33.17,255.93,-375.39,323.50,-85.05,
-  //                   0.26,-0.99,0.12,44.66,35.43,199.79,212.43,321.56,-161.70];
-  //     // var unlabeled_set = [];
-  //     // var data = fs.readFileSync('./training_set/circle.csv','utf-8');
-  //     // unlabeled_set = recognizer.load(data);
-  //     // recognizer.set(unlabeled_set,recognizer.GESTURE_CIRCLE);
-  //     // data = fs.readFileSync('./training_set/start_mic.csv','utf-8');
-  //     // unlabeled_set = recognizer.load(data);
-  //     // recognizer.set(unlabeled_set,recognizer.GESTURE_START_MIC);
-  //     // data = fs.readFileSync('./training_set/stop.csv','utf-8');
-  //     // unlabeled_set = recognizer.load(data);
-  //     // recognizer.set(unlabeled_set,recognizer.GESTURE_STOP);
-  //     // data = fs.readFileSync('./training_set/walking.csv','utf-8');
-  //     // unlabeled_set = recognizer.load(data);
-  //     // recognizer.set(unlabeled_set,recognizer.GESTURE_WALKING);
+  //     var unlabeled_set = [];
 
-  //     // recognizer.train(net,recognizer.trainingSet);
-  //     var network = JSON.parse(fs.readFileSync('./trained_net.json','utf-8'));
-  //     net.fromJSON(network);
+  //     var data = fs.readFileSync('./training_set/GESTURE_CIRCLE.csv','utf-8');
+  //     unlabeled_set = recognizer.load(data);
+  //     recognizer.set(unlabeled_set,recognizer.GESTURE_CIRCLE);
+      
+  //     data = fs.readFileSync('./training_set/GESTURE_START_MIC.csv','utf-8');
+  //     unlabeled_set = recognizer.load(data);
+  //     recognizer.set(unlabeled_set,recognizer.GESTURE_START_MIC);
+      
+  //     data = fs.readFileSync('./training_set/GESTURE_STOP.csv','utf-8');
+  //     unlabeled_set = recognizer.load(data);
+  //     recognizer.set(unlabeled_set,recognizer.GESTURE_STOP);
+      
+  //     data = fs.readFileSync('./training_set/GESTURE_WALKING.csv','utf-8');
+  //     unlabeled_set = recognizer.load(data);
+  //     recognizer.set(unlabeled_set,recognizer.GESTURE_WALKING);
 
-  //     var output = recognizer.run(net,sample);
-  //     console.log("no gesture is " + output.none);
-  //     console.log("circle is " + output.circle);
-  //     console.log("stop is " + output.stop);
-  //     console.log("walking is " + output.walking);
-  //     console.log("start mic is " + output.mic);
+  //     recognizer.train(net,recognizer.trainingSet);
+
+  //     assert.equal(86,recognizer.trainingSet.length); //10 samples for each gesture
   //   });
   // });
+  describe('run',function(){
+    it('should run the trained neural network',function(){
+      var recognizer = new gestureRecognizer();
+      var sample = [0.26,-0.07,1.13,38.05,-8.89,87.93,135.80,20.86,-344.40,
+                    0.50,-0.12,0.90,41.74,-39.77,-131.20,119.31,-98.45,-330.75,
+                    0.11,0.00,0.83,-56.90,-13.83,-100.80,122.22,15.04,-349.65,
+                    -0.15,-0.18,1.02,-72.28,-47.08,0.63,100.88,194.48,-334.95,
+                    0.35,-0.32,1.03,20.45,-18.63,127.44,99.91,202.25,-325.50,
+                    0.23,-0.24,0.92,15.03,-1.72,12.66,128.04,114.94,-337.05];
+      // var unlabeled_set = [];
+      // var data = fs.readFileSync('./training_set/circle.csv','utf-8');
+      // unlabeled_set = recognizer.load(data);
+      // recognizer.set(unlabeled_set,recognizer.GESTURE_CIRCLE);
+      // data = fs.readFileSync('./training_set/start_mic.csv','utf-8');
+      // unlabeled_set = recognizer.load(data);
+      // recognizer.set(unlabeled_set,recognizer.GESTURE_START_MIC);
+      // data = fs.readFileSync('./training_set/stop.csv','utf-8');
+      // unlabeled_set = recognizer.load(data);
+      // recognizer.set(unlabeled_set,recognizer.GESTURE_STOP);
+      // data = fs.readFileSync('./training_set/walking.csv','utf-8');
+      // unlabeled_set = recognizer.load(data);
+      // recognizer.set(unlabeled_set,recognizer.GESTURE_WALKING);
+
+      // recognizer.train(net,recognizer.trainingSet);
+      var network = JSON.parse(fs.readFileSync('./trained_net.json','utf-8'));
+      net.fromJSON(network);
+
+      var output = recognizer.run(net,sample);
+      console.log("no gesture is " + output.none);
+      console.log("circle is " + output.circle);
+      console.log("stop is " + output.stop);
+      console.log("walking is " + output.walking);
+      console.log("start mic is " + output.mic);
+    });
+  });
 
   
 });
