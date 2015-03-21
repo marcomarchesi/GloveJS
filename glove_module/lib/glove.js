@@ -159,10 +159,10 @@ function sendData(){
           // console.log("walking is " + output.walking);
           // console.log("start mic is " + output.mic);
 
-        for(var i=0;i<SAMPLE_DIM;++i)
+        for(var i=0;i<SAMPLE_DIM-1;++i)
           hand_data += imuBuffer[i] + '\t';
 
-        hand_data += imuBuffer[SAMPLE_DIM] + '\n';
+        hand_data += imuBuffer[SAMPLE_DIM-1] + '\n';
 
         io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter,raw:imuBuffer,recognizer:output});
         // if(sampleCounter == 60)
@@ -208,35 +208,12 @@ function onStop(gesture){
     gestureString += "ClassID: " + gesture + "\n";
     gestureString += "TimeSeriesLength: " + sampleCounter + "\n";
     gestureString += "TimeSeriesData: \n";
-    // switch(gesture){
-    //   case 0:
-    //     gestureString += "GESTURE_NONE\n";
-    //   break;
-    //   case 1:
-    //     gestureString += "GESTURE_START_MIC\n";
-    //   break;
-    //   case 2:
-    //     gestureString = "GESTURE_STOP\n";
-    //   break;
-    //   case 3:
-    //     gestureString = "GESTURE_WALKING\n";
-    //   break;
-    //   case 4:
-    //     gestureString = "GESTURE_CIRCLE\n";
-    //   break;
-    //   case 5:
-    //     gestureString = "GESTURE_STANDING\n";
-    //   break;
-    // }
 
-    var filepath = './training_set/gesture_data.txt';
+    var filepath = './training_set/GestureData.txt';
     var data = fs.readFileSync(filepath,'utf-8');
 
     data += gestureString + hand_data;
 
-    // add current date to filename
-    // var d = new Date();
-    // var n = d.getTime();
     fs.writeFile(filepath, data, function (err) {
        if (err) console.log("Error: ", err);
       console.log('It\'s saved!');
