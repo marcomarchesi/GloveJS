@@ -7,32 +7,34 @@
           margin: 0;
           overflow: hidden;
         }
-        #startButton {
-          display:inline-block;
-          font-size: 1em;
-          margin: 0.9em 3em;
-          width:150px;
-          color: white;
-          background-color:#41D6C3;
-          border: 0px;
-        }
         #trainField {
           display:inline-block;
           font-size: 1em;
+          font-family: helvetica;
           margin: 0.9em 1em;
           width:200px;
           color: white;
-          background-color:#41D6C3;
+          background-color:#464646;
           border: 0px;
         }
-        #dataField,
+        #dataField{
+          display:inline-block;
+          font-size: 1em;
+          font-family: helvetica;
+          margin: 0.9em 1em;
+          width:400px;
+          color: white;
+          background-color:#464646;
+          border: 0px;
+        }
         #recognizerField {
           display:inline-block;
           font-size: 1em;
+          font-family: helvetica;
           margin: 0.9em 1em;
-          width:200px;
+          width:400px;
           color: white;
-          background-color:#41D6C3;
+          background-color:#464646;
           border: 0px;
         }
         #header{
@@ -76,15 +78,6 @@
       var container = document.createElement("div");
       document.body.appendChild(container);
 
-    
-      // Instance a start/stop button
-      var btn = document.createElement("BUTTON");
-      btn.setAttribute("id", "startButton"); 
-      btn.innerHTML = "Start";       // Create a <button> element
-      header.appendChild(btn);  // Append <button> to <body>
-      document.getElementById("startButton").addEventListener("click",onClickStartButton,false);
-
-
       var trainField = document.createElement("BUTTON");
       trainField.setAttribute("id","trainField");
       trainField.innerHTML = "-------";
@@ -95,8 +88,8 @@
 
       // Instance data field
       var dataField = document.createElement("div");
-      dataField.setAttribute("id","data");
-      dataField.innerHTML = "";
+      dataField.setAttribute("id","dataField");
+      dataField.innerHTML = "acc_x:" + " acc_y:" + " acc_z:" +  " gyr_x:" +  " gyr_y:" +  " gyr_z:";
       header.appendChild(dataField);
 
       var recognizerField = document.createElement("div");
@@ -255,17 +248,6 @@
           camera.updateProjectionMatrix();
           renderer.setSize(window.innerWidth, window.innerHeight);
       }
-      function onClickStartButton(){
-        if(!isTracking){
-          document.getElementById("startButton").innerHTML = "Stop";
-          socket.emit('start');
-          isTracking = true;
-        }else{
-          document.getElementById("startButton").innerHTML = "Start";
-          socket.emit('stop',{gesture:0});
-          isTracking = false;
-        } 
-      }
 
       function onKeyPressForGesture(event){
         var key = event.keyCode;
@@ -297,8 +279,8 @@
             default:
               trainField.innerHTML = "NO_GESTURE";
           }
-          if(gesture == 0)
-            delay = 150000;
+          // if(gesture == 0)
+          //   delay = 150000;
 
           socket.emit('start');
           setTimeout(function(){
