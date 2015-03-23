@@ -34,6 +34,7 @@ var ALPHA = 0.9;
 var BETA = 0.1;
 
 var SAMPLE_DIM = 6;
+var DECIMAL_PRECISION = 4;
 
 // var com_x_max = com_y_max = com_z_max = 0;
 // var com_x_min = com_y_min = com_z_min = 0;
@@ -89,9 +90,8 @@ sp.on('error',function(error){
 
 
 function sendData(){
-      var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
 
-      // console.log(chalk.yellow(buffer.readInt16LE(2)));
+      var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
 
       acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
       acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
@@ -125,15 +125,15 @@ function sendData(){
       // console.log(yaw);
 
       
-      imuBuffer = [ acc_x.toFixed(2),
-                    acc_y.toFixed(2),
-                    acc_z.toFixed(2),
-                    gyr_x.toFixed(2),
-                    gyr_y.toFixed(2),
-                    gyr_z.toFixed(2),
-                    com_x.toFixed(2),
-                    com_y.toFixed(2),
-                    com_z.toFixed(2)
+      imuBuffer = [ acc_x.toFixed(DECIMAL_PRECISION),
+                    acc_y.toFixed(DECIMAL_PRECISION),
+                    acc_z.toFixed(DECIMAL_PRECISION),
+                    gyr_x.toFixed(DECIMAL_PRECISION),
+                    gyr_y.toFixed(DECIMAL_PRECISION),
+                    gyr_z.toFixed(DECIMAL_PRECISION),
+                    com_x.toFixed(DECIMAL_PRECISION),
+                    com_y.toFixed(DECIMAL_PRECISION),
+                    com_z.toFixed(DECIMAL_PRECISION)
                     ];
 
       // send data to client
@@ -195,29 +195,38 @@ io.sockets.on('connection', function (socket) {
 function onStop(gesture){
     // isTracking = false;
 
-
-    var gestureString = "************TIME_SERIES************\n";
-
-    /* valid gestures:
+        /* valid gestures:
     * 1. start mic
     * 2. stop
     * 3. walking 
     * 4. circle 
     */
 
+    var gestureCSV = "";
+    var gestureString = "************TIME_SERIES************\n";
+
+
     gestureString += "ClassID: " + gesture + "\n";
     gestureString += "TimeSeriesLength: " + sampleCounter + "\n";
     gestureString += "TimeSeriesData: \n";
 
-    var filepath = './training_set/GestureData.txt';
+    var filepath = './training_set/TrainingData.txt';
+    var csv_path = './training_set/TrainingData.csv';
     var data = fs.readFileSync(filepath,'utf-8');
-
     data += gestureString + hand_data;
 
     fs.writeFile(filepath, data, function (err) {
        if (err) console.log("Error: ", err);
       console.log('It\'s saved!');
     });
+
+    var csv_data = fs.readFileSync(csv_path,'utf-8');
+    csv_data += gestureCSV + hand_data;
+    fs.writeFile(csv_path, csv_data, function (err) {
+       if (err) console.log("Error: ", err);
+      console.log('It\'s saved!');
+    });
+
 
     sampleCounter = 0;
 

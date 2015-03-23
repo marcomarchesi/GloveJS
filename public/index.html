@@ -252,15 +252,15 @@
       function onKeyPressForGesture(event){
         var key = event.keyCode;
         var gesture = key % 48;
-        var delay = 3000;
+        var delay = 6000;   //it takes 6 seconds
 
         if(!isTraining){
 
           isTraining = true;
           switch(gesture){
-            case 0:
-              trainField.innerHTML = "NO_GESTURE";
-            break;
+            // case 0:
+            //   trainField.innerHTML = "NO_GESTURE";
+            // break;
             case 1:
               trainField.innerHTML = "GESTURE_START_MIC";
             break;
