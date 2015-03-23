@@ -199,9 +199,9 @@
       }
     
       function render() {
-        hand_mesh.rotation.x = roll;
-        hand_mesh.rotation.y = yaw;
-        hand_mesh.rotation.z = pitch;
+        hand_mesh.rotation.x = pitch;
+        hand_mesh.rotation.y = -yaw;
+        hand_mesh.rotation.z = roll;
         hand_mesh.updateMatrix();
     
         controls.update();

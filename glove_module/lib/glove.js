@@ -12,6 +12,11 @@ var serialport = require("serialport").SerialPort;
 var brain = require('brain');
 var net = new brain.NeuralNetwork();
 
+// Leap Motion
+var Leap = require('leapjs');
+var controller = new Leap.Controller({enableGestures: false});
+var leapHand = {};
+
 // serial port parameters
 var READ_CMD = [0x01,0x02,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03];
 var BAUD_RATE = 115200;
@@ -87,6 +92,20 @@ sp.on('data',function(data){
 sp.on('error',function(error){
   console.log(chalk.red(error));
 });
+
+
+    controller.loop(function(frame) {
+
+            for (var i in frame.handsMap) {
+              leapHand = frame.handsMap[i];
+              // console.log(leapHand.roll());
+              io.sockets.emit('data',{roll:leapHand.roll(),pitch:leapHand.pitch(),yaw:leapHand.yaw()});
+            }
+            
+    });
+    controller.on('ready', function() {
+          console.log(chalk.green("Leap Motion ready"));
+    });
 
 
 function sendData(){
@@ -204,30 +223,33 @@ function onStop(gesture){
 
     var gestureCSV = "";
     var gestureString = "************TIME_SERIES************\n";
-
-
     gestureString += "ClassID: " + gesture + "\n";
     gestureString += "TimeSeriesLength: " + sampleCounter + "\n";
     gestureString += "TimeSeriesData: \n";
-
     var filepath = './training_set/TrainingData.txt';
     var csv_path = './training_set/TrainingData.csv';
+
+
+    // save txt format for GRT
+
     var data = fs.readFileSync(filepath,'utf-8');
     data += gestureString + hand_data;
-
     fs.writeFile(filepath, data, function (err) {
        if (err) console.log("Error: ", err);
       console.log('It\'s saved!');
     });
 
-    var csv_data = fs.readFileSync(csv_path,'utf-8');
-    csv_data += gestureCSV + hand_data;
-    fs.writeFile(csv_path, csv_data, function (err) {
-       if (err) console.log("Error: ", err);
-      console.log('It\'s saved!');
-    });
+    // save csv format for Matlab
+
+    // var csv_data = fs.readFileSync(csv_path,'utf-8');
+    // csv_data += gestureCSV + hand_data;
+    // fs.writeFile(csv_path, csv_data, function (err) {
+    //    if (err) console.log("Error: ", err);
+    //   console.log('It\'s saved!');
+    // });
 
 
+    // reset
     sampleCounter = 0;
 
 }
