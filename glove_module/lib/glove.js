@@ -17,6 +17,11 @@ var Leap = require('leapjs');
 var controller = new Leap.Controller({enableGestures: false});
 var leapHand = {};
 
+
+// cd /System/Library/Extensions/IOUSBFamily.kext/Contents/Plugins 
+// sudo mv AppleUSBFTDI.kext AppleUSBFTDI.disabled 
+// sudo touch /System/Library/Extensions 
+
 // serial port parameters
 var READ_CMD = [0x01,0x02,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03];
 var BAUD_RATE = 115200;
@@ -26,17 +31,17 @@ var GYRO_FACTOR = 14.375;
 var ACC_X_OFFSET = 0;
 var ACC_Y_OFFSET = 0;
 var ACC_Z_OFFSET = 38.46;
-var GYR_X_OFFSET = 0.626;
-var GYR_Y_OFFSET = -1.895;
-var GYR_Z_OFFSET = 0;
+var GYR_X_OFFSET = -2.00;
+var GYR_Y_OFFSET = -0.9;
+var GYR_Z_OFFSET = 0.13;
 var COM_X_OFFSET = 38;
 var COM_Y_OFFSET = 27.5;
 var COM_Z_OFFSET = -25;
 var COM_X_SCALE = 0.97;
 var COM_Y_SCALE = 0.97;
 var COM_Z_SCALE = 1.05;
-var ALPHA = 0.9;
-var BETA = 0.1;
+var ALPHA = 0.99;
+var BETA = 0.01;
 
 var SAMPLE_DIM = 6;
 var DECIMAL_PRECISION = 4;
@@ -53,13 +58,10 @@ var sampleCounter = 0;
 
 var io = require('socket.io').listen(8001);
 
-console.log("hello glove");
-
-
-
+console.log("Hello Glove!");
 
 var quaternion = require("./Quaternion.js");
-var q = new quaternion(0.1,10);
+var q = new quaternion(1,10);
 
 var Recognizer = require("./GestureRecognizer.js");
 var recognizer = new Recognizer();
@@ -71,6 +73,8 @@ net.fromJSON(network);
 var sp = new serialport("/dev/cu.AmpedUp-AMP-SPP", {
 // var sp = new serialport("/dev/tty.usbserial-DA00RAK6", {
   baudrate: BAUD_RATE,
+  rtscts: false,
+  flowControl: false
 });
 //open serial port
 sp.on("open", function () {
@@ -81,6 +85,7 @@ sp.on("open", function () {
 sp.on('data',function(data){
   // console.log(data);
   // sp.write(READ_CMD);
+  
       for(var i = 0;i<data.length;++i){
         buffer[byteCounter] = data[i]; 
         byteCounter++;
@@ -88,6 +93,7 @@ sp.on('data',function(data){
       }
       if(byteCounter==21)
         sendData();
+
 });
 sp.on('error',function(error){
   console.log(chalk.red(error));
@@ -112,15 +118,26 @@ function sendData(){
 
       var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
 
-      acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
-      acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
+      //swap x & y values
+      acc_x = (buffer.readInt16LE(4) + ACC_X_OFFSET)*G_FACTOR;
+      acc_y = -(buffer.readInt16LE(2) + ACC_Y_OFFSET)*G_FACTOR;
       acc_z = (buffer.readInt16LE(6) + ACC_Z_OFFSET)*G_FACTOR;
-      gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR - GYR_X_OFFSET;
-      gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR - GYR_Y_OFFSET;
-      gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR - GYR_Z_OFFSET;
-      com_x = COM_X_SCALE * (buffer.readInt16LE(14) - COM_X_OFFSET);
-      com_y = COM_Y_SCALE * (buffer.readInt16LE(16) - COM_Y_OFFSET);
+      gyr_x = -(buffer.readInt16LE(10)/GYRO_FACTOR) + GYR_X_OFFSET;
+      gyr_y = (buffer.readInt16LE(8)/GYRO_FACTOR) + GYR_Y_OFFSET;
+      gyr_z = (buffer.readInt16LE(12)/GYRO_FACTOR) + GYR_Z_OFFSET;
+      com_x = COM_X_SCALE * (buffer.readInt16LE(16) - COM_Y_OFFSET);
+      com_y = COM_Y_SCALE * (buffer.readInt16LE(14) - COM_X_OFFSET);
       com_z = COM_Z_SCALE * (buffer.readInt16LE(18) - COM_Z_OFFSET);
+
+      // acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
+      // acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
+      // acc_z = (buffer.readInt16LE(6) + ACC_Z_OFFSET)*G_FACTOR;
+      // gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR - GYR_X_OFFSET;
+      // gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR - GYR_Y_OFFSET;
+      // gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR - GYR_Z_OFFSET;
+      // com_x = COM_X_SCALE * (buffer.readInt16LE(14) - COM_X_OFFSET);
+      // com_y = COM_Y_SCALE * (buffer.readInt16LE(16) - COM_Y_OFFSET);
+      // com_z = COM_Z_SCALE * (buffer.readInt16LE(18) - COM_Z_OFFSET);
 
       // com_x_max = Math.max(com_x_max,com_x);
       // com_x_min = Math.min(com_x_min,com_x);
@@ -129,17 +146,20 @@ function sendData(){
       // com_z_max = Math.max(com_z_max,com_z);
       // com_z_min = Math.min(com_z_min,com_z);
 
-      console.log(chalk.yellow(acc_z));
+      // console.log(chalk.yellow("acc_x " + acc_x + " acc_y " + acc_y + " acc_z " + acc_z));
+      console.log(chalk.yellow("gyr_x " + gyr_x + " gyr_y " + gyr_y + " gyr_z " + gyr_z));
 
       q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
       q.computeEuler();
 
-      var roll = q.getRoll();
-      var pitch = q.getPitch();
-      // var yaw = ALPHA * degreesToRadians(gyr_z) + BETA * degreesToRadians(com_z);
-      var yaw = q.getYaw();
-      // var pitch = Math.asin(-acc_x/Math.sqrt(acc_x*acc_x + acc_y*acc_y + acc_z*acc_z));
-      // var roll = Math.asin(acc_y/Math.cos(pitch)*Math.sqrt(acc_x*acc_x + acc_z*acc_z));
+      // var roll = q.getRoll();
+      // var pitch = q.getPitch();
+      var yaw = ALPHA * degreesToRadians(gyr_z) ;
+      // + BETA * degreesToRadians(com_z);
+      // var yaw = 0;
+      // var yaw = q.getYaw();
+      var pitch = Math.atan(acc_y/Math.sqrt(acc_x*acc_x + acc_z*acc_z));
+      var roll = Math.atan(-acc_x/acc_z);
       
       // console.log(yaw);
 

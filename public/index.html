@@ -89,7 +89,7 @@
       // Instance data field
       var dataField = document.createElement("div");
       dataField.setAttribute("id","dataField");
-      dataField.innerHTML = "acc_x:" + " acc_y:" + " acc_z:" +  " gyr_x:" +  " gyr_y:" +  " gyr_z:";
+      dataField.innerHTML = "acc_x:" + " acc_y:" + " acc_z:" +  " gyr_x:" +  " gyr_y:" +  " gyr_z:" +  " com_x:" +  " com_y:" +  " com_z:";
       header.appendChild(dataField);
 
       var recognizerField = document.createElement("div");
@@ -181,7 +181,7 @@
         yaw = data.yaw;
         raw = data.raw;
         var output = data.recognizer;
-        dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5];
+        dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5] + " com_x:" + raw[6] + " com_y:" + raw[7] + " com_z:" + raw[8];
         recognizerField.innerHTML = "MIC: " + output.mic.toFixed(2) + " STOP: " + output.stop.toFixed(2) + " WALK: " + output.walking.toFixed(2) + " CIRCLE: " + output.circle.toFixed(2);
 
         // if(output.mic > 0.9)
@@ -199,9 +199,9 @@
       }
     
       function render() {
-        hand_mesh.rotation.x = pitch;
-        hand_mesh.rotation.y = -yaw;
-        hand_mesh.rotation.z = roll;
+        hand_mesh.rotation.z = -pitch;
+        hand_mesh.rotation.y = yaw;
+        hand_mesh.rotation.x = -roll;
         hand_mesh.updateMatrix();
     
         controls.update();
