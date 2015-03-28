@@ -18,12 +18,9 @@ var controller = new Leap.Controller({enableGestures: false});
 var leapHand = {};
 
 
-// cd /System/Library/Extensions/IOUSBFamily.kext/Contents/Plugins 
-// sudo mv AppleUSBFTDI.kext AppleUSBFTDI.disabled 
-// sudo touch /System/Library/Extensions 
-
 // serial port parameters
-var READ_CMD = [0x01,0x02,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03];
+var START_CMD = [0x01,0x02,0x01,0x03];
+var STOP_CMD = [0x01,0x02,0x00,0x03];
 var BAUD_RATE = 115200;
 // imu parameters
 var G_FACTOR = 0.00390625;
@@ -34,12 +31,16 @@ var ACC_Z_OFFSET = 38.46;
 var GYR_X_OFFSET = -1.7;
 var GYR_Y_OFFSET = 0;
 var GYR_Z_OFFSET = 0.00;
+
+/* not sure yet on COMPASS values */
 var COM_X_OFFSET = 38;
 var COM_Y_OFFSET = 27.5;
 var COM_Z_OFFSET = -25;
 var COM_X_SCALE = 0.97;
 var COM_Y_SCALE = 0.97;
 var COM_Z_SCALE = 1.05;
+/*************************/
+
 var ALPHA = 0.9;
 var BETA = 0.1;
 var com_x_offset = 0;
@@ -84,7 +85,7 @@ var sp = new serialport("/dev/cu.AmpedUp-AMP-SPP", {
     /********************/
     sp.on("open", function () {
         console.log('Serial port is open');
-        sp.write(READ_CMD);
+        sp.write(START_CMD);
     });
 
     sp.on('data',function(data){
@@ -230,7 +231,7 @@ function sendData(){
     // }
     buffer = new Buffer(21);
     byteCounter = 0;
-    sp.write(READ_CMD);
+    // sp.write(READ_CMD);
 }
 
 function degreesToRadians(degree){
