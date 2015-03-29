@@ -1,5 +1,5 @@
-/* lib module
-
+/* glove.js
+* by Marco Marchesi
 */
 var chalk = require('chalk');
 var fs = require('fs');
@@ -8,14 +8,15 @@ var io = require('socket.io');
 
 // Serial port
 var serialport = require("serialport").SerialPort;
-// Neural Network
-var brain = require('brain');
-var net = new brain.NeuralNetwork();
 
-// Leap Motion
-var Leap = require('leapjs');
-var controller = new Leap.Controller({enableGestures: false});
-var leapHand = {};
+// UNCOMMENT FOR Neural Network
+// var brain = require('brain');
+// var net = new brain.NeuralNetwork();
+
+// UNCOMMENT FOR Leap Motion
+// var Leap = require('leapjs');
+// var controller = new Leap.Controller({enableGestures: false});
+// var leapHand = {};
 
 
 // serial port parameters
@@ -35,7 +36,8 @@ var GYR_Y_OFFSET = 1.81;
 var GYR_Z_OFFSET = 0.07;
 var SAMPLE_TIME = 0.03 // 30 milliseconds
 var pitch = roll = yaw = 0;
-// var acc_x = acc_y = acc_z = gyr_x = gyr_y = gyr_z = com_x = com_y = com_z = 0;
+
+var stepCount = 0;
 
 /* not sure yet on COMPASS values */
 var COM_X_OFFSET = 27.5;
@@ -68,15 +70,15 @@ var io = require('socket.io').listen(8001);
 
 console.log("Hello Glove!");
 
-var quaternion = require("./Quaternion.js");
-var q = new quaternion(0.4,10);
+// var quaternion = require("./Quaternion.js");
+// var q = new quaternion(0.4,10);
 
-var Recognizer = require("./GestureRecognizer.js");
-var recognizer = new Recognizer();
+// var Recognizer = require("./GestureRecognizer.js");
+// var recognizer = new Recognizer();
 
-/* init trained neural network */
-var network = JSON.parse(fs.readFileSync('./trained_net.json','utf-8'));
-net.fromJSON(network);
+// /* init trained neural network */
+// var network = JSON.parse(fs.readFileSync('./trained_net.json','utf-8'));
+// net.fromJSON(network);
 
 var sp = new serialport(BT_PORT, {
   baudrate: BAUD_RATE,
@@ -155,7 +157,14 @@ function sendData(){
 
       // console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
       // console.log(chalk.yellow("gyr_x " + gyr_x.toFixed(2) + " gyr_y " + gyr_y.toFixed(2) + " gyr_z " + gyr_z.toFixed(2)));
-      console.log(chalk.yellow("com_x " + com_x + " com_y " + com_y + " com_z " + com_z));
+      // console.log(chalk.yellow("com_x " + com_x + " com_y " + com_y + " com_z " + com_z));
+
+      var length = Math.sqrt(acc_x * acc_x+ acc_y  * acc_y  +acc_z  * acc_z );
+      if(length>=1.85){
+         // stepCount++;
+      }
+
+      
 
 
       /* IMUfilter NOT WORKING */
@@ -178,9 +187,14 @@ function sendData(){
       // var yaw_short = degreesToRadians(com_y);
       // yaw = ALPHA * (yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME)) + (1- ALPHA) * yaw_short;
       var yaw_compensation = sign(yaw)*degreesToRadians(SAMPLE_TIME*0.144);
+      var yaw_old = yaw;
       yaw = yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME) + yaw_compensation;
       // yaw = 0;
-      
+
+      if(sign(yaw_old) != sign(yaw))
+        stepCount = 1;
+      else
+        stepCount = 0;
       // console.log(yaw);
 
 
@@ -200,31 +214,31 @@ function sendData(){
         sampleCounter++;
 
 
-        //update queue with a new value
-        var queueElement = [];
-        for(var i = 0;i<recognizer.GESTURE_SAMPLES;++i){
-          queueElement.push(Number(imuBuffer[i]));
-        }
-        recognizer.queue.push(queueElement);
+        // //update queue with a new value
+        // var queueElement = [];
+        // for(var i = 0;i<recognizer.GESTURE_SAMPLES;++i){
+        //   queueElement.push(Number(imuBuffer[i]));
+        // }
+        // recognizer.queue.push(queueElement);
 
-        if(recognizer.queue.length == recognizer.GESTURE_SAMPLES+1)
-          recognizer.queue.shift();
+        // if(recognizer.queue.length == recognizer.GESTURE_SAMPLES+1)
+        //   recognizer.queue.shift();
 
-        var flattenQueue = _.flatten(recognizer.queue,true);
+        // var flattenQueue = _.flatten(recognizer.queue,true);
 
-        // detect new gesture from updated data
-        var output = recognizer.run(net,flattenQueue);
-          // console.log("circle is " + output.circle);
-          // console.log("stop is " + output.stop);
-          // console.log("walking is " + output.walking);
-          // console.log("start mic is " + output.mic);
+        // // detect new gesture from updated data
+        // var output = recognizer.run(net,flattenQueue);
+        //   // console.log("circle is " + output.circle);
+        //   // console.log("stop is " + output.stop);
+        //   // console.log("walking is " + output.walking);
+        //   // console.log("start mic is " + output.mic);
 
         for(var i=0;i<SAMPLE_DIM-1;++i)
           hand_data += imuBuffer[i] + '\t';
 
         hand_data += imuBuffer[SAMPLE_DIM-1] + '\n';
 
-        io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,counter:sampleCounter,raw:imuBuffer,recognizer:output});
+        io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,stepCount:stepCount,counter:sampleCounter,raw:imuBuffer});
         // if(sampleCounter == 60)
         //   sampleCounter = 0;
     // }
