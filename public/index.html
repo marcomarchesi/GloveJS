@@ -112,7 +112,7 @@
       recognizerField.innerHTML = "MIC: 0.00 WALK: 0.00 STOP: 0.00 CIRCLE: 0.00";
       header.appendChild(recognizerField);
 
-            function init() {
+      function init() {
 
             clock = new THREE.Clock();
 
@@ -184,7 +184,7 @@
 
             // call the render function, after the first render, interval is determined
             // by requestAnimationFrame
-        }
+      }
 
       // read data from socket
 
@@ -192,7 +192,7 @@
         roll = data.roll;
         pitch = data.pitch;
         yaw = data.yaw;
-        rotationField.innerHTML = "roll:" + roll.toFixed(2) + " pitch:" + pitch.toFixed(2) + " yaw:" + yaw.toFixed(2);
+        rotationField.innerHTML = "roll:" + roll + " pitch:" + pitch + " yaw:" + yaw;
         raw = data.raw;
         var output = data.recognizer;
         dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5] + " com_x:" + raw[6] + " com_y:" + raw[7] + " com_z:" + raw[8];
@@ -206,8 +206,8 @@
     
       function render() {
         hand_mesh.rotation.z = roll;
-        hand_mesh.rotation.y = yaw;
         hand_mesh.rotation.x = pitch;
+        hand_mesh.rotation.y = yaw;
         hand_mesh.updateMatrix();
     
         renderer.autoClear = false;

@@ -30,9 +30,9 @@ var GYRO_FACTOR = 14.375;
 var ACC_X_OFFSET = -17.948;
 var ACC_Y_OFFSET = -12.820;
 var ACC_Z_OFFSET = 38.46;
-var GYR_X_OFFSET = -1.18;
-var GYR_Y_OFFSET = 2.09;
-var GYR_Z_OFFSET = 0.14;
+var GYR_X_OFFSET = -0.63;
+var GYR_Y_OFFSET = 1.81;
+var GYR_Z_OFFSET = 0.07;
 var SAMPLE_TIME = 0.03 // 30 milliseconds
 var pitch = roll = yaw = 0;
 // var acc_x = acc_y = acc_z = gyr_x = gyr_y = gyr_z = com_x = com_y = com_z = 0;
@@ -91,14 +91,10 @@ var sp = new serialport(BT_PORT, {
         sp.write(START_CMD);
     });
 
-    sp.on('data',function(data){
-      // console.log(data);
-      // sp.write(READ_CMD);
-      
+    sp.on('data',function(data){ 
           for(var i = 0;i<data.length;++i){
             buffer[byteCounter] = data[i]; 
             byteCounter++;
-            // console.log(j);
           }
           if(byteCounter==21)
             sendData();
@@ -129,18 +125,6 @@ function sendData(){
 
       var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
 
-      // acc_x = ALPHA * ((buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR) + BETA * acc_x;
-      // acc_y = ALPHA * ((buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR) + BETA * acc_y;
-      // acc_z = ALPHA * ((buffer.readInt16LE(6) + ACC_Z_OFFSET)*G_FACTOR) + BETA * acc_z;
-
-      // gyr_x = (buffer.readInt16LE(8)/GYRO_FACTOR) + GYR_X_OFFSET;
-      // gyr_y = (buffer.readInt16LE(10)/GYRO_FACTOR) + GYR_Y_OFFSET;
-      // gyr_z = (buffer.readInt16LE(12)/GYRO_FACTOR) + GYR_Z_OFFSET;
-
-      // com_x = COM_X_SCALE * (buffer.readInt16LE(14) - COM_X_OFFSET) - com_x_offset;
-      // com_y = COM_Y_SCALE * (buffer.readInt16LE(16) - COM_Y_OFFSET) - com_y_offset;
-      // com_z = COM_Z_SCALE * (buffer.readInt16LE(18) - COM_Z_OFFSET) - com_z_offset;
-
       // if(com_x_offset == 0)
       //   com_x_offset = com_x;
 
@@ -169,32 +153,33 @@ function sendData(){
       // com_z_max = Math.max(com_z_max,com_z);
       // com_z_min = Math.min(com_z_min,com_z);
 
-      console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
+      // console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
       // console.log(chalk.yellow("gyr_x " + gyr_x.toFixed(2) + " gyr_y " + gyr_y.toFixed(2) + " gyr_z " + gyr_z.toFixed(2)));
-      // console.log(chalk.yellow("com_x " + com_x + " com_y " + com_y + " com_z " + com_z));
-      // q.update(acc_x,acc_y,acc_z,degreesToRadians(gyr_x),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
-      // q.computeEuler();
+      console.log(chalk.yellow("com_x " + com_x + " com_y " + com_y + " com_z " + com_z));
 
+
+      /* IMUfilter NOT WORKING */
+      // q.update(acc_x,acc_y,acc_z,degreesToRadians(GYR_X_OFFSET),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
+      // q.computeEuler();
       // roll = q.getRoll();
       // pitch = q.getPitch();
-      // var yaw = ALPHA * degreesToRadians(gyr_z) + BETA * degreesToRadians(com_y);
-      // var yaw = degreesToRadians(ALPHA*com_x + BETA*gyr_z);
-      yaw = 0;
-      // var yaw = Math.PI/2 + degreesToRadians(com_y);
       // yaw = q.getYaw();
-
 
       /* COMPLEMENTARY FILTER */
       /* it works with the accelerometer and the gyroscope */
       //IMU is rotated of -Math.PI/2 so I swap x & y in the formulas below:
-      // var roll_short = Math.atan2(acc_x,acc_z);
-      // roll = ALPHA * (roll + (degreesToRadians(gyr_y) * SAMPLE_TIME)) + (1- ALPHA) * roll_short;
+
+      /* ROLL */
+      var roll_short = Math.atan2(acc_x,Math.sqrt(acc_y*acc_y + acc_z*acc_z));
+      roll = ALPHA * (roll - (degreesToRadians(gyr_y) * SAMPLE_TIME)) + (1- ALPHA) * roll_short;
+      /* PITCH */
       var pitch_short  = Math.atan2(acc_y,acc_z);
       pitch  = ALPHA * (pitch + (degreesToRadians(gyr_x) * SAMPLE_TIME)) + (1- ALPHA) * pitch_short;
       // var yaw_short = degreesToRadians(com_y);
-      // var yaw = ALPHA * (yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME)) + (1- ALPHA) * yaw_short;
-      roll = 0;
-      yaw = 0;
+      // yaw = ALPHA * (yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME)) + (1- ALPHA) * yaw_short;
+      var yaw_compensation = sign(yaw)*degreesToRadians(SAMPLE_TIME*0.144);
+      yaw = yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME) + yaw_compensation;
+      // yaw = 0;
       
       // console.log(yaw);
 
@@ -250,6 +235,12 @@ function sendData(){
 
 function degreesToRadians(degree){
   return degree*(Math.PI/180);
+}
+function sign(value){
+  if (value > 0)
+    return 1;
+  else
+    return -1;
 }
 
 
