@@ -59,7 +59,6 @@
   <body>
     <script type="text/javascript" src="js/three.min.js"></script>
     <script type="text/javascript" src="js/stats.min.js"></script>
-    <script type="text/javascript" src="js/TrackballControls.js"></script>
     <script type="text/javascript" src="js/JSONLoader.js"></script>
     <script type="text/javascript" src="js/EffectComposer.js"></script>
     <script type="text/javascript" src="js/RenderPass.js"></script>
@@ -75,7 +74,7 @@
       var raw = {};
 
       //Global variables
-      var scene,sceneBG,camera,cameraBG,renderer,composer,controls;
+      var scene,sceneBG,camera,cameraBG,renderer,composer;
       var hand_mesh;
       var light,loader;
       var clock = new THREE.Clock();
@@ -145,8 +144,6 @@
             camera.position.z = 20;
             camera.lookAt(scene.position);
 
-            controls = new THREE.TrackballControls( camera );
-
             // add extras
             
             addStats();
@@ -199,16 +196,8 @@
         raw = data.raw;
         var output = data.recognizer;
         dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5] + " com_x:" + raw[6] + " com_y:" + raw[7] + " com_z:" + raw[8];
-        recognizerField.innerHTML = "MIC: " + output.mic.toFixed(2) + " STOP: " + output.stop.toFixed(2) + " WALK: " + output.walking.toFixed(2) + " CIRCLE: " + output.circle.toFixed(2);
+        // recognizerField.innerHTML = "MIC: " + output.mic + " STOP: " + output.stop + " WALK: " + output.walking + " CIRCLE: " + output.circle;
 
-        // if(output.mic > 0.9)
-        //   alert("mic");
-        // if(output.walking > 0.9)
-        //   alert("walking");
-        // if(output.circle > 0.9)
-        //   alert("circle");
-        // if(output.stop > 0.9)
-        //   alert("stop");
       });
 
       function degreesToRadians(degree){
@@ -216,13 +205,11 @@
       }
     
       function render() {
-        hand_mesh.rotation.z = -roll;
+        hand_mesh.rotation.z = roll;
         hand_mesh.rotation.y = yaw;
         hand_mesh.rotation.x = pitch;
         hand_mesh.updateMatrix();
     
-        controls.update();
-        // controls.update( clock.getDelta() );
         renderer.autoClear = false;
         composer.render(); //instead of renderer.render();
         requestAnimationFrame( render );
