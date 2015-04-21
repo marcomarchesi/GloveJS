@@ -1,4 +1,4 @@
-/* glove.js
+/* Glove.js
 * by Marco Marchesi
 */
 var chalk = require('chalk');
@@ -35,43 +35,46 @@ var GYR_X_OFFSET = -0.63;
 var GYR_Y_OFFSET = 1.81;
 var GYR_Z_OFFSET = 0.07;
 var SAMPLE_TIME = 0.03 // 30 milliseconds
+
+/* MAGNETOMETER CALIBRATION */
+//  (Caruso M., "Applications of Magnetoresistive Sensor in Navigation Systems")
+//  Xsf = 1054/1072 = 0.983 ~= 1 
+//  Ysf = 1072/1054 = 1.017
+
+//  Xoff = ((1072/2) - 511)* Xsf = 25 * 0.983 = 24.575
+//  Yoff = ((1054/2) - 566)* Ysf = -39.663
+
+var COM_X_OFFSET = 24.575;
+var COM_Y_OFFSET = -39.663;
+var COM_X_SCALE = 0.983;
+var COM_Y_SCALE = 1.017;
+/*************************/
 var pitch = roll = yaw = 0;
 
 var stepCount = 0;
-
-/* not sure yet on COMPASS values */
-var COM_X_OFFSET = 27.5;
-var COM_Y_OFFSET = 38;
-var COM_Z_OFFSET = -25;
-var COM_X_SCALE = 0.97;
-var COM_Y_SCALE = 0.97;
-var COM_Z_SCALE = 1.05;
-/*************************/
+var WALKING_THRESHOLD = 1.75;
 
 var ALPHA = 0.97; //from ALPHA = t / (SAMPLE_TIME * t) and t = 1 (initial guess)
-var com_x_offset = 0;
-var com_y_offset = 0;
-var com_z_offset = 0;
 
 var SAMPLE_DIM = 6;
 var DECIMAL_PRECISION = 4;
 
-// var com_x_max = com_y_max = com_z_max = 0;
-// var com_x_min = com_y_min = com_z_min = 0;
+var com_x_max = com_y_max = com_z_max = 0;
+var com_x_min = com_y_min = com_z_min = 0;
 
 var buffer = new Buffer(21);
 var byteCounter =0;
 // var isTracking = false;
 var hand_data = "";
-var imuBuffer = {};
+var imuBuffer = [];
 var sampleCounter = 0;
 
 var io = require('socket.io').listen(8001);
 
 console.log("Hello Glove!");
 
-// var quaternion = require("./Quaternion.js");
-// var q = new quaternion(0.4,10);
+var quaternion = require('./IMUProcess.js');
+var q = new quaternion();
 
 // var Recognizer = require("./GestureRecognizer.js");
 // var recognizer = new Recognizer();
@@ -80,7 +83,9 @@ console.log("Hello Glove!");
 // var network = JSON.parse(fs.readFileSync('./trained_net.json','utf-8'));
 // net.fromJSON(network);
 
-var sp = new serialport(BT_PORT, {
+var opened_port = BT_PORT;
+
+var sp = new serialport(opened_port, {
   baudrate: BAUD_RATE,
   rtscts: false,
   flowControl: false
@@ -89,7 +94,7 @@ var sp = new serialport(BT_PORT, {
     /* OPEN SERIAL PORT */
     /********************/
     sp.on("open", function () {
-        console.log('Serial port is open');
+        console.log('Serial port ' + opened_port + ' is open');
         sp.write(START_CMD);
     });
 
@@ -127,24 +132,17 @@ function sendData(){
 
       var acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z;
 
-      // if(com_x_offset == 0)
-      //   com_x_offset = com_x;
-
-      // if(com_y_offset == 0)
-      //   com_y_offset = com_y;
-
-      // if(com_z_offset == 0)
-      //   com_z_offset = com_z;
-
       acc_x = (buffer.readInt16LE(2) + ACC_X_OFFSET)*G_FACTOR;
       acc_y = (buffer.readInt16LE(4) + ACC_Y_OFFSET)*G_FACTOR;
       acc_z = (buffer.readInt16LE(6) + ACC_Z_OFFSET)*G_FACTOR;
       gyr_x = buffer.readInt16LE(8)/GYRO_FACTOR + GYR_X_OFFSET;
       gyr_y = buffer.readInt16LE(10)/GYRO_FACTOR + GYR_Y_OFFSET;
       gyr_z = buffer.readInt16LE(12)/GYRO_FACTOR + GYR_Z_OFFSET;
-      com_x = COM_X_SCALE * (buffer.readInt16LE(14) - COM_X_OFFSET);
-      com_y = COM_Y_SCALE * (buffer.readInt16LE(16) - COM_Y_OFFSET);
-      com_z = COM_Z_SCALE * (buffer.readInt16LE(18) - COM_Z_OFFSET);
+      com_x = COM_X_SCALE * buffer.readInt16LE(14) + COM_X_OFFSET;
+      com_y = COM_Y_SCALE * buffer.readInt16LE(16) + COM_Y_OFFSET;
+      com_z = buffer.readInt16LE(18);
+
+      q.update(acc_x,acc_y,acc_z,gyr_x,gyr_y,gyr_z,com_x,com_y,com_z);
 
 
       /* VALUES FOR COMPASS CALIBRATION */
@@ -155,24 +153,30 @@ function sendData(){
       // com_z_max = Math.max(com_z_max,com_z);
       // com_z_min = Math.min(com_z_min,com_z);
 
-      // console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
+      console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
       // console.log(chalk.yellow("gyr_x " + gyr_x.toFixed(2) + " gyr_y " + gyr_y.toFixed(2) + " gyr_z " + gyr_z.toFixed(2)));
-      // console.log(chalk.yellow("com_x " + com_x + " com_y " + com_y + " com_z " + com_z));
+      // console.log(chalk.yellow("com_x " + com_x.toFixed(2) + " com_y " + com_y.toFixed(2) + " com_z " + com_z.toFixed(2)));
+
+      // console.log('max is ' + com_y_max + " min is " + com_y_min);
+      //max_x = 511
+      //min_x = -561
+      //max_y = 566
+      //min_y -488
+
+      //Xsf = 1054/1072 = 0.983 = 1
+      //Ysf = 1072/1054 = 1.017
+
+      //Xoff = ((1072/2) - 511)* Xsf = 25 * 0.983 = 24.575
+      //Yoff = ((1054/2) - 566)* Ysf = -39.663
+
+
 
       var length = Math.sqrt(acc_x * acc_x+ acc_y  * acc_y  +acc_z  * acc_z );
-      if(length>=1.85){
-         // stepCount++;
-      }
+      if(length>=WALKING_THRESHOLD)
+        stepCount = 1;
+      else
+        stepCount = 0;
 
-      
-
-
-      /* IMUfilter NOT WORKING */
-      // q.update(acc_x,acc_y,acc_z,degreesToRadians(GYR_X_OFFSET),degreesToRadians(gyr_y),degreesToRadians(gyr_z));
-      // q.computeEuler();
-      // roll = q.getRoll();
-      // pitch = q.getPitch();
-      // yaw = q.getYaw();
 
       /* COMPLEMENTARY FILTER */
       /* it works with the accelerometer and the gyroscope */
@@ -184,18 +188,16 @@ function sendData(){
       /* PITCH */
       var pitch_short  = Math.atan2(acc_y,acc_z);
       pitch  = ALPHA * (pitch + (degreesToRadians(gyr_x) * SAMPLE_TIME)) + (1- ALPHA) * pitch_short;
-      // var yaw_short = degreesToRadians(com_y);
-      // yaw = ALPHA * (yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME)) + (1- ALPHA) * yaw_short;
-      var yaw_compensation = sign(yaw)*degreesToRadians(SAMPLE_TIME*0.144);
-      var yaw_old = yaw;
-      yaw = yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME) + yaw_compensation;
-      // yaw = 0;
+      // // var yaw_short = degreesToRadians(com_y);
+      // // yaw = ALPHA * (yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME)) + (1- ALPHA) * yaw_short;
+      // var yaw_compensation = sign(yaw)*degreesToRadians(SAMPLE_TIME*0.144);
+      // yaw = yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME) + yaw_compensation;
 
-      if(sign(yaw_old) != sign(yaw))
-        stepCount = 1;
-      else
-        stepCount = 0;
-      // console.log(yaw);
+
+      // roll = q.getRoll();
+      // pitch = q.getPitch();
+      yaw = q.getYaw();
+      
 
 
       
@@ -230,7 +232,7 @@ function sendData(){
         // var output = recognizer.run(net,flattenQueue);
         //   // console.log("circle is " + output.circle);
         //   // console.log("stop is " + output.stop);
-        //   // console.log("walking is " + output.walking);
+        //   // console.log("triangleis " + output.walking);
         //   // console.log("start mic is " + output.mic);
 
         for(var i=0;i<SAMPLE_DIM-1;++i)
@@ -277,8 +279,8 @@ function onStop(gesture){
 
         /* valid gestures:
     * 1. start mic
-    * 2. stop
-    * 3. walking 
+    * 2. square
+    * 3. triangle
     * 4. circle 
     */
 
@@ -287,8 +289,15 @@ function onStop(gesture){
     gestureString += "ClassID: " + gesture + "\n";
     gestureString += "TimeSeriesLength: " + sampleCounter + "\n";
     gestureString += "TimeSeriesData: \n";
-    var filepath = './training_set/TrainingData.txt';
-    var csv_path = './training_set/TrainingData.csv';
+    var filepath = "";
+
+    if (gesture > 4)
+      filepath = './training_set/TestData.txt';
+    else
+      filepath = './training_set/TrainingData.txt';
+
+    // var filepath = './training_set/TrainingData.txt';
+    // var csv_path = './training_set/TrainingData.csv';
 
 
     // save txt format for GRT

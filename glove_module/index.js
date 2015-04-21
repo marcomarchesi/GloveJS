@@ -3,4 +3,4 @@
 * by Marco Marchesi
 */
 
-module.exports = require("./lib/glove.js");
+module.exports = require("./lib/Glove.js");

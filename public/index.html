@@ -109,7 +109,7 @@
 
       var recognizerField = document.createElement("div");
       recognizerField.setAttribute("id","recognizerField");
-      recognizerField.innerHTML = "MIC: 0.00 WALK: 0.00 STOP: 0.00 CIRCLE: 0.00";
+      recognizerField.innerHTML = "MIC: 0.00 SQUARE : 0.00  TRIANGLE: 0.00 CIRCLE: 0.00";
       header.appendChild(recognizerField);
 
       function init() {
@@ -196,7 +196,7 @@
         raw = data.raw;
         var output = data.recognizer;
         dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5] + " com_x:" + raw[6] + " com_y:" + raw[7] + " com_z:" + raw[8];
-        // recognizerField.innerHTML = "MIC: " + output.mic + " STOP: " + output.stop + " WALK: " + output.walking + " CIRCLE: " + output.circle;
+        // recognizerField.innerHTML = "MIC: " + output.mic + " SQUARE  : " + output.stop + " TRIANGLE: " + output.walking + " CIRCLE: " + output.circle;
 
       });
 
@@ -256,35 +256,42 @@
       function onKeyPressForGesture(event){
         var key = event.keyCode;
         var gesture = key % 48;
-        var delay = 6000;   //it takes 6 seconds
+        var delay = 4000;   //it takes 4 seconds
 
         if(!isTraining){
 
           isTraining = true;
           switch(gesture){
-            // case 0:
-            //   trainField.innerHTML = "NO_GESTURE";
-            // break;
             case 1:
               trainField.innerHTML = "GESTURE_START_MIC";
             break;
             case 2:
-              trainField.innerHTML = "GESTURE_STOP";
+              trainField.innerHTML = "GESTURE_SQUARE  ";
             break;
             case 3:
-              trainField.innerHTML = "GESTURE_WALKING";
+              trainField.innerHTML = "GESTURE_TRIANGLE";
             break;
             case 4:
               trainField.innerHTML = "GESTURE_CIRCLE";
             break;
             case 5:
-              trainField.innerHTML = "GESTURE_STANDING";
+              trainField.innerHTML = "FINGER_THUMB";
+            break;
+            case 6:
+              trainField.innerHTML = "FINGER_INDEX";
+            break;
+            case 7:
+              trainField.innerHTML = "FINGER_MIDDLE";
+            break;
+            case 8:
+              trainField.innerHTML = "FINGER_RING";
+            break;
+            case 9:
+              trainField.innerHTML = "FINGER_PINKY";
             break;
             default:
               trainField.innerHTML = "NO_GESTURE";
           }
-          // if(gesture == 0)
-          //   delay = 150000;
 
           socket.emit('start');
           setTimeout(function(){
