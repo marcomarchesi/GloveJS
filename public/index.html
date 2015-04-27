@@ -72,7 +72,10 @@
       var socket = io.connect('http://localhost:8001'); //receive data from glove.js
       var roll,pitch,yaw;
       var raw = {};
-
+      var acc_x = 0;
+      var total_acc_old = 0;
+      var acc_y = 0;
+      var acc_z = 0;
       //Global variables
       var scene,sceneBG,camera,cameraBG,renderer,composer;
       var hand_mesh;
@@ -194,6 +197,9 @@
         yaw = data.yaw;
         rotationField.innerHTML = "roll:" + roll + " pitch:" + pitch + " yaw:" + yaw;
         raw = data.raw;
+        acc_x = raw[0];
+        acc_y = raw[1];
+        acc_z = raw[2];
         var output = data.recognizer;
         dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5] + " com_x:" + raw[6] + " com_y:" + raw[7] + " com_z:" + raw[8];
         // recognizerField.innerHTML = "MIC: " + output.mic + " SQUARE  : " + output.stop + " TRIANGLE: " + output.walking + " CIRCLE: " + output.circle;
@@ -207,7 +213,20 @@
       function render() {
         hand_mesh.rotation.z = roll;
         hand_mesh.rotation.x = pitch;
-        hand_mesh.rotation.y = yaw;
+        // hand_mesh.rotation.y = yaw;
+
+        /* test */
+        var total_acc = Math.sqrt(acc_x*acc_x + acc_y*acc_y + acc_z*acc_z);
+        if(Math.abs(hand_mesh.position.x) < 5)
+          hand_mesh.position.y =  hand_mesh.position.y + Number(total_acc_old - total_acc)*10;
+
+        total_acc_old = total_acc;
+
+        // if(Math.abs(hand_mesh.position.y) < 10)
+        //   hand_mesh.position.x += Number(acc_x/5);
+        // if(Math.abs(hand_mesh.position.y) < 10)
+        //   hand_mesh.position.x += Number(acc_x/2);         
+
         hand_mesh.updateMatrix();
     
         renderer.autoClear = false;
@@ -236,6 +255,9 @@
             hand_mesh.castShadow = true;
             hand_mesh.matrixAutoUpdate = true;
             scene.add(hand_mesh);
+            hand_mesh.position.x = 0;
+            hand_mesh.position.y = 0;
+            hand_mesh.position.z = 0;
 
             //start rendering here
             render();

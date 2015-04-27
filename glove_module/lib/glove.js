@@ -9,6 +9,11 @@ var io = require('socket.io');
 // Serial port
 var serialport = require("serialport").SerialPort;
 
+/* OSC port */
+var osc = require('node-osc');
+var oscClient = new osc.Client('127.0.0.1', 5000);
+
+
 // UNCOMMENT FOR Neural Network
 // var brain = require('brain');
 // var net = new brain.NeuralNetwork();
@@ -56,7 +61,7 @@ var WALKING_THRESHOLD = 1.75;
 
 var ALPHA = 0.97; //from ALPHA = t / (SAMPLE_TIME * t) and t = 1 (initial guess)
 
-var SAMPLE_DIM = 3; // just sample the gyroscope
+var SAMPLE_DIM = 6; // just sample the gyroscope
 var DECIMAL_PRECISION = 4;
 
 var com_x_max = com_y_max = com_z_max = 0;
@@ -170,7 +175,6 @@ function sendData(){
       //Yoff = ((1054/2) - 566)* Ysf = -39.663
 
 
-
       var length = Math.sqrt(acc_x * acc_x+ acc_y  * acc_y  +acc_z  * acc_z );
       if(length>=WALKING_THRESHOLD)
         stepCount = 1;
@@ -236,9 +240,16 @@ function sendData(){
         //   // console.log("start mic is " + output.mic);
 
         for(var i=0;i<SAMPLE_DIM-1;++i)
-          hand_data += imuBuffer[3+i] + '\t';
+          hand_data += imuBuffer[i] + '\t';
 
-        hand_data += imuBuffer[3+SAMPLE_DIM-1] + '\n';
+        oscClient.send('/Data', imuBuffer[0],
+                                imuBuffer[1],
+                                imuBuffer[2],
+                                imuBuffer[3],
+                                imuBuffer[4],
+                                imuBuffer[5]);
+
+        hand_data += imuBuffer[SAMPLE_DIM-1] + '\n';
 
         io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,stepCount:stepCount,counter:sampleCounter,raw:imuBuffer});
         // if(sampleCounter == 60)
