@@ -61,7 +61,7 @@ var WALKING_THRESHOLD = 1.75;
 
 var ALPHA = 0.97; //from ALPHA = t / (SAMPLE_TIME * t) and t = 1 (initial guess)
 
-var SAMPLE_DIM = 3; // just sample the gyroscope
+var SAMPLE_DIM = 6; // just sample accelerometer and gyroscope
 var DECIMAL_PRECISION = 4;
 
 var com_x_max = com_y_max = com_z_max = 0;
@@ -72,6 +72,8 @@ var byteCounter =0;
 // var isTracking = false;
 var hand_data = "";
 var imuBuffer = [];
+var imuArray = [];
+var outputArray = [];
 var sampleCounter = 0;
 
 var io = require('socket.io').listen(8001);
@@ -80,6 +82,9 @@ console.log("Hello Glove!");
 
 var quaternion = require('./IMUProcess.js');
 var q = new quaternion();
+
+var Utils = require("./Utils.js");
+var utils = new Utils();
 
 // var Recognizer = require("./GestureRecognizer.js");
 // var recognizer = new Recognizer();
@@ -158,7 +163,7 @@ function sendData(){
       // com_z_max = Math.max(com_z_max,com_z);
       // com_z_min = Math.min(com_z_min,com_z);
 
-      console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
+      // console.log(chalk.yellow("acc_x " + acc_x.toFixed(2) + " acc_y " + acc_y.toFixed(2) + " acc_z " + acc_z.toFixed(2)));
       // console.log(chalk.yellow("gyr_x " + gyr_x.toFixed(2) + " gyr_y " + gyr_y.toFixed(2) + " gyr_z " + gyr_z.toFixed(2)));
       // console.log(chalk.yellow("com_x " + com_x.toFixed(2) + " com_y " + com_y.toFixed(2) + " com_z " + com_z.toFixed(2)));
 
@@ -196,14 +201,12 @@ function sendData(){
       // // yaw = ALPHA * (yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME)) + (1- ALPHA) * yaw_short;
       // var yaw_compensation = sign(yaw)*degreesToRadians(SAMPLE_TIME*0.144);
       // yaw = yaw + (degreesToRadians(gyr_z) * SAMPLE_TIME) + yaw_compensation;
-
-
       // roll = q.getRoll();
       // pitch = q.getPitch();
       yaw = q.getYaw();
+
+
       
-
-
       
       imuBuffer = [ acc_x.toFixed(DECIMAL_PRECISION),
                     acc_y.toFixed(DECIMAL_PRECISION),
@@ -216,46 +219,25 @@ function sendData(){
                     com_z.toFixed(DECIMAL_PRECISION)
                     ];
 
+      imuArray.push([acc_x.toFixed(DECIMAL_PRECISION),
+                    acc_y.toFixed(DECIMAL_PRECISION),
+                    acc_z.toFixed(DECIMAL_PRECISION),
+                    gyr_x.toFixed(DECIMAL_PRECISION),
+                    gyr_y.toFixed(DECIMAL_PRECISION),
+                    gyr_z.toFixed(DECIMAL_PRECISION)
+                    ]);
+
       // send data to client
-        sampleCounter++;
+      sampleCounter++;
 
+      io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,stepCount:stepCount,counter:sampleCounter,raw:imuBuffer});
 
-        // //update queue with a new value
-        // var queueElement = [];
-        // for(var i = 0;i<recognizer.GESTURE_SAMPLES;++i){
-        //   queueElement.push(Number(imuBuffer[i]));
-        // }
-        // recognizer.queue.push(queueElement);
+      buffer = new Buffer(21);
+      byteCounter = 0;
 
-        // if(recognizer.queue.length == recognizer.GESTURE_SAMPLES+1)
-        //   recognizer.queue.shift();
-
-        // var flattenQueue = _.flatten(recognizer.queue,true);
-
-        // // detect new gesture from updated data
-        // var output = recognizer.run(net,flattenQueue);
-        //   // console.log("circle is " + output.circle);
-        //   // console.log("stop is " + output.stop);
-        //   // console.log("triangleis " + output.walking);
-        //   // console.log("start mic is " + output.mic);
-
-        for(var i=0;i<SAMPLE_DIM-1;++i)
-          hand_data += imuBuffer[3+i] + '\t';
-
-        oscClient.send('/Data', imuBuffer[3],
-                                imuBuffer[4],
-                                imuBuffer[5]);
-
-        hand_data += imuBuffer[SAMPLE_DIM-1] + '\n';
-
-        io.sockets.emit('data',{roll:roll,pitch:pitch,yaw:yaw,stepCount:stepCount,counter:sampleCounter,raw:imuBuffer});
-        // if(sampleCounter == 60)
-        //   sampleCounter = 0;
-    // }
-    buffer = new Buffer(21);
-    byteCounter = 0;
-    // sp.write(READ_CMD);
 }
+
+/* MATH FUNCTIONS */
 
 function degreesToRadians(degree){
   return degree*(Math.PI/180);
@@ -268,10 +250,13 @@ function sign(value){
 }
 
 
+
 io.sockets.on('connection', function (socket) {
   // start tracking
   socket.on('start',function (data) {
     hand_data = "";
+    imuArray = [];
+    outputArray = [];
     sampleCounter = 0;
   });
   socket.on('stop',function(data) {
@@ -301,8 +286,34 @@ function onStop(gesture){
 
     filepath = './training_set/TestData.txt';
 
+    console.log("imuArray is " + imuArray.length);
+    // console.log(imuArray);
+
+    for(var j=0;j<SAMPLE_DIM;++j){
+        var featureArray = [];
+        for(var i =0; i<imuArray.length;++i){
+          featureArray.push(Number(imuArray[i][j]));
+        }
+        // console.log("feature is " + featureArray.length);
+        var normalizedArray = utils.normalize(featureArray);
+        // console.log("normalized is " + normalizedArray.length);
+        outputArray.push(normalizedArray);
+        // console.log("output is " + outputArray.length);
+    }
+
+    
 
 
+    for(var i = 0;i<imuArray.length;++i){
+      for(var j=0;j<SAMPLE_DIM-1;++j){
+            // console.log("imu is " + imuArray[i][j] + " and norm is " + outputArray[j][i] + " and " + i + "," + j);
+            hand_data += outputArray[j][i] + '\t'; 
+          }
+          hand_data += outputArray[SAMPLE_DIM-1][i] + '\n';
+    }
+
+    // console.log(hand_data);
+    
     // save txt format for GRT
 
     var data = fs.readFileSync(filepath,'utf-8');
@@ -312,17 +323,7 @@ function onStop(gesture){
       console.log('It\'s saved!');
     });
 
-    // save csv format for Matlab
-
-    // var csv_data = fs.readFileSync(csv_path,'utf-8');
-    // csv_data += gestureCSV + hand_data;
-    // fs.writeFile(csv_path, csv_data, function (err) {
-    //    if (err) console.log("Error: ", err);
-    //   console.log('It\'s saved!');
-    // });
-
-
     // reset
     sampleCounter = 0;
-
+    
 }
