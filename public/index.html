@@ -42,7 +42,7 @@
           font-size: 1em;
           font-family: helvetica;
           margin: 0.9em 1em;
-          width:400px;
+          width:600px;
           color: white;
           background-color:#464646;
           border: 0px;
@@ -72,10 +72,10 @@
       var socket = io.connect('http://localhost:8001'); //receive data from glove.js
       var roll,pitch,yaw;
       var raw = {};
-      var acc_x = 0;
+      var acc_x = acc_y = acc_z = 0;
+      var gyr_x = gyr_y = gyr_z = 0;
+      var mag_x = mag_y = mag_z = 0;
       var total_acc_old = 0;
-      var acc_y = 0;
-      var acc_z = 0;
       //Global variables
       var scene,sceneBG,camera,cameraBG,renderer,composer;
       var hand_mesh;
@@ -101,7 +101,7 @@
       // Instance data field
       var dataField = document.createElement("div");
       dataField.setAttribute("id","dataField");
-      dataField.innerHTML = "acc_x:" + " acc_y:" + " acc_z:" +  " gyr_x:" +  " gyr_y:" +  " gyr_z:" +  " com_x:" +  " com_y:" +  " com_z:";
+      dataField.innerHTML = "acc_x:" + " acc_y:" + " acc_z:" +  " gyr_x:" +  " gyr_y:" +  " gyr_z:" +  " mag_x:" +  " mag_y:" +  " mag_z:";
       header.appendChild(dataField);
 
       // rotations field
@@ -112,7 +112,7 @@
 
       var recognizerField = document.createElement("div");
       recognizerField.setAttribute("id","recognizerField");
-      recognizerField.innerHTML = "MIC: 0.00 SQUARE : 0.00  TRIANGLE: 0.00 CIRCLE: 0.00";
+      recognizerField.innerHTML = "MIC:1 SQUARE:2  TRIANGLE:3  CIRCLE:4  PUNCH:5  OPEN_DOOR:6";
       header.appendChild(recognizerField);
 
       function init() {
@@ -195,13 +195,15 @@
         roll = data.roll;
         pitch = data.pitch;
         yaw = data.yaw;
-        rotationField.innerHTML = "roll:" + roll + " pitch:" + pitch + " yaw:" + yaw;
+        rotationField.innerHTML = "roll:" + roll.toFixed(2) + " pitch:" + pitch.toFixed(2) + " yaw:" + yaw.toFixed(2);
         raw = data.raw;
-        acc_x = raw[0];
-        acc_y = raw[1];
-        acc_z = raw[2];
+        acc_x = raw[0]; acc_y = raw[1]; acc_z = raw[2];
+        gyr_x = raw[3]; gyr_y = raw[4]; gyr_z = raw[5];
+        mag_x = raw[6]; mag_y = raw[7]; mag_z = raw[8];
+
         var output = data.recognizer;
-        dataField.innerHTML = "acc_x:" + raw[0]+ " acc_y:" + raw[1] + " acc_z:" + raw[2] + " gyr_x:" + raw[3]+ " gyr_y:" + raw[4] + " gyr_z:" + raw[5] + " com_x:" + raw[6] + " com_y:" + raw[7] + " com_z:" + raw[8];
+        if(raw)
+        dataField.innerHTML = "acc_x:" + Number(acc_x).toFixed(2) + " acc_y:" + Number(acc_y).toFixed(2) + " acc_z:" + Number(acc_z).toFixed(2) + " gyr_x:" + Number(gyr_x).toFixed(2) + " gyr_y:" + Number(gyr_y).toFixed(2) + " gyr_z:" + Number(gyr_z).toFixed(2) + " mag_x:" + Number(mag_x).toFixed(2) + " mag_y:" + Number(mag_y).toFixed(2) + " mag_z:" + Number(mag_z).toFixed(2);
         // recognizerField.innerHTML = "MIC: " + output.mic + " SQUARE  : " + output.stop + " TRIANGLE: " + output.walking + " CIRCLE: " + output.circle;
 
       });
@@ -297,10 +299,10 @@
               trainField.innerHTML = "GESTURE_CIRCLE";
             break;
             case 5:
-              trainField.innerHTML = "FINGER_THUMB";
+              trainField.innerHTML = "PUNCH";
             break;
             case 6:
-              trainField.innerHTML = "FINGER_INDEX";
+              trainField.innerHTML = "OPEN_DOOR";
             break;
             case 7:
               trainField.innerHTML = "FINGER_MIDDLE";

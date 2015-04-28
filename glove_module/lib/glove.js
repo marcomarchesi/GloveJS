@@ -61,7 +61,7 @@ var WALKING_THRESHOLD = 1.75;
 
 var ALPHA = 0.97; //from ALPHA = t / (SAMPLE_TIME * t) and t = 1 (initial guess)
 
-var SAMPLE_DIM = 6; // just sample the gyroscope
+var SAMPLE_DIM = 3; // just sample the gyroscope
 var DECIMAL_PRECISION = 4;
 
 var com_x_max = com_y_max = com_z_max = 0;
@@ -240,12 +240,9 @@ function sendData(){
         //   // console.log("start mic is " + output.mic);
 
         for(var i=0;i<SAMPLE_DIM-1;++i)
-          hand_data += imuBuffer[i] + '\t';
+          hand_data += imuBuffer[3+i] + '\t';
 
-        oscClient.send('/Data', imuBuffer[0],
-                                imuBuffer[1],
-                                imuBuffer[2],
-                                imuBuffer[3],
+        oscClient.send('/Data', imuBuffer[3],
                                 imuBuffer[4],
                                 imuBuffer[5]);
 
@@ -302,13 +299,8 @@ function onStop(gesture){
     gestureString += "TimeSeriesData: \n";
     var filepath = "";
 
-    if (gesture > 4)
-      filepath = './training_set/TestData.txt';
-    else
-      filepath = './training_set/TrainingData.txt';
+    filepath = './training_set/TestData.txt';
 
-    // var filepath = './training_set/TrainingData.txt';
-    // var csv_path = './training_set/TrainingData.csv';
 
 
     // save txt format for GRT
