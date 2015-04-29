@@ -18,7 +18,6 @@ describe('Utils', function(){
       for(var i =0; i<testIMUArray.length;++i){
         tempArray.push(testIMUArray[i][0]);
       }
-      console.log(tempArray.length);
       var outputArray = utils.normalize(tempArray);
       assert.equal(-1.7419, outputArray[0]);
     });

@@ -6,7 +6,7 @@ TotalNumTrainingExamples: 20
 NumberOfClasses: 2
 ClassIDsAndCounters: 
 1 10
-2 10
+2 20
 UseExternalRanges: 0
 LabelledTimeSeriesTrainingData:
 ************TIME_SERIES************
