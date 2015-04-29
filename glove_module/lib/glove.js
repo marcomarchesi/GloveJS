@@ -74,6 +74,7 @@ var hand_data = "";
 var imuBuffer = [];
 var imuArray = [];
 var outputArray = [];
+var standard_deviation = [8,8,8,1000,1000,1000];
 var sampleCounter = 0;
 
 var io = require('socket.io').listen(8001);
@@ -295,7 +296,7 @@ function onStop(gesture){
           featureArray.push(Number(imuArray[i][j]));
         }
         // console.log("feature is " + featureArray.length);
-        var normalizedArray = utils.normalize(featureArray);
+        var normalizedArray = utils.normalize(featureArray,0,standard_deviation[j]);
         // console.log("normalized is " + normalizedArray.length);
         outputArray.push(normalizedArray);
         // console.log("output is " + outputArray.length);
