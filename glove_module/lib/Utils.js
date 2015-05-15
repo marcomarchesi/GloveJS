@@ -37,4 +37,24 @@ Utils.prototype.normalize = function(array,mean,std){
       return output_array;
 };
 
+Utils.prototype.getMean = function(array){
+  var mean = 0;
+  for (var i = 0;i<array.length;++i){
+          mean += Number(array[i]);
+        }
+  mean /= array.length;
+  return mean;
+};
+
+Utils.prototype.getStdDev = function(array){
+  var variance = 0;
+  var mean = this.getMean(array);
+  for (var i = 0;i<array.length;++i){
+          variance += (array[i] - mean)*(array[i] - mean);
+        }
+  variance /= array.length;
+  var stdDev = Math.sqrt(variance);
+  return stdDev;
+}
+
 module.exports = Utils;

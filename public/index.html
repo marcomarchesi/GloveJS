@@ -73,9 +73,9 @@
       var roll,pitch,yaw;
       var raw = {};
       var acc_x = acc_y = acc_z = 0;
+      var acc_xo = acc_yo = acc_zo = 0;
       var gyr_x = gyr_y = gyr_z = 0;
       var mag_x = mag_y = mag_z = 0;
-      var total_acc_old = 0;
       //Global variables
       var scene,sceneBG,camera,cameraBG,renderer,composer;
       var hand_mesh;
@@ -224,10 +224,13 @@
 
         // total_acc_old = total_acc;
 
-        // if(Math.abs(hand_mesh.position.y) < 10)
-        //   hand_mesh.position.x += Number(acc_x/5);
-        // if(Math.abs(hand_mesh.position.y) < 10)
-        //   hand_mesh.position.x += Number(acc_x/2);         
+        // if(Math.abs(hand_mesh.position.y) < 5){
+        //   hand_mesh.position.y += Number(1 - acc_z);
+        // }
+
+          
+        // if(Math.abs(hand_mesh.position.x) < 10)
+        //   hand_mesh.position.y += Number(acc_x/2);         
 
         hand_mesh.updateMatrix();
     
