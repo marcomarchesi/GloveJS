@@ -9,27 +9,13 @@ var io = require('socket.io');
 // Serial port
 var serialport = require("serialport").SerialPort;
 
-/* OSC port */
-var osc = require('node-osc');
-var oscClient = new osc.Client('127.0.0.1', 5000);
-
-
-// UNCOMMENT FOR Neural Network
-// var brain = require('brain');
-// var net = new brain.NeuralNetwork();
-
-// UNCOMMENT FOR Leap Motion
-// var Leap = require('leapjs');
-// var controller = new Leap.Controller({enableGestures: false});
-// var leapHand = {};
-
 
 // serial port parameters
 var BT_PORT = "/dev/cu.Glove-AMP-SPP";
-var USB_PORT = "/dev/tty.usbserial-DA00RAK6";
+var USB_PORT = "/dev/cu.usbserial-DA00RAK6";
 var START_CMD = [0x01,0x02,0x01,0x03];
 var STOP_CMD = [0x01,0x02,0x00,0x03];
-var BAUD_RATE = 115200;
+var BAUD_RATE = 57600;
 
 /* MAGNETOMETER CALIBRATION */
 //  (Caruso M., "Applications of Magnetoresistive Sensor in Navigation Systems")
@@ -77,7 +63,7 @@ var Utils = require("./Utils.js");
 var utils = new Utils();
 
 
-var opened_port = BT_PORT;
+var opened_port = USB_PORT;
 
 var sp = new serialport(opened_port, {
   baudrate: BAUD_RATE,
@@ -105,21 +91,6 @@ var sp = new serialport(opened_port, {
       console.log(chalk.red(error));
     });
   
-    /* uncomment for LEAP MOTION usage */
-    // controller.loop(function(frame) {
-
-    //         for (var i in frame.handsMap) {
-    //           leapHand = frame.handsMap[i];
-    //           // console.log(leapHand.roll());
-    //           io.sockets.emit('data',{roll:leapHand.roll(),pitch:leapHand.pitch(),yaw:leapHand.yaw()});
-    //         }
-            
-    // });
-    // controller.on('ready', function() {
-    //       console.log(chalk.green("Leap Motion ready"));
-    // });
-
-    /* *********************** */
 
 
 function sendData(){

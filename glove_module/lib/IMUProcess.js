@@ -13,10 +13,10 @@ function IMUProcess(){
 
 IMUProcess.prototype.update = function(theta,rx,ry,rz) {
 
-    this.q1 = rx * sin(theta/2);
-    this.q2 = ry * sin(theta/2);
-    this.q3 = rz * sin(theta/2);
-    this.q4 = cos(theta/2);
+    this.q1 = rx * Math.sin(theta/2);
+    this.q2 = ry * Math.sin(theta/2);
+    this.q3 = rz * Math.sin(theta/2);
+    this.q4 = Math.cos(theta/2);
 
 
 };
